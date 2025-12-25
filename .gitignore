@@ -1,0 +1,20 @@
+node_modules/
+*.log
+.env
+uploads/
+output/
+debug.log
+.DS_Store
+dist/
+build/
+
+# Unused legacy files
+web/
+
+# Test images
+engine/test-images/
+
+# Default Vite/React files not needed
+client/src/App.css
+client/src/assets/
+client/README.md
