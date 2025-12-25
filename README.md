@@ -1,13 +1,13 @@
 # SmartCompress - Image Compression SaaS
 
-A modern, TinyPNG-inspired image compression tool built with React and Node.js. Compress PNG, JPG, and WebP images with smart lossy compression techniques.
+A modern image compression tool built with React and Node.js. Compress PNG, JPG, and WebP images with smart lossy compression techniques.
 
 ## Features
 
 - 🖼️ **Multi-format Support**: PNG, JPG, and WebP compression
 - 🚀 **Batch Processing**: Upload and compress multiple images at once
 - 📦 **ZIP Download**: Download all compressed images as a single ZIP file
-- 💎 **Premium UI**: TinyPNG-inspired design with smooth animations
+- 💎 **Premium UI**: Modern design with smooth animations
 - 🔒 **Rate Limiting**: 100 compressions per day for free tier
 - 📊 **Real-time Stats**: See compression savings instantly
 - ⚡ **Fast Processing**: Docker-based compression engine
@@ -70,16 +70,16 @@ PORT=5000
 cd api
 npm start
 ```
+The API will be available at `http://localhost:5000`
 
 2. **Start the React dev server** (in a new terminal)
 ```bash
 cd client
 npm run dev
 ```
+The frontend will be available at `http://localhost:5173`
 
-3. **Open your browser**
-- Frontend: http://localhost:5173
-- API: http://localhost:5000
+**Note**: Both servers must be running for the application to work properly.
 
 ## Project Structure
 
@@ -155,5 +155,4 @@ MIT License - feel free to use this project for personal or commercial purposes.
 
 ## Acknowledgments
 
-- Inspired by [TinyPNG](https://tinypng.com)
 - Compression powered by pngquant, jpegoptim, and cwebp
