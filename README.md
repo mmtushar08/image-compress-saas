@@ -152,7 +152,3 @@ MIT License - feel free to use this project for personal or commercial purposes.
 ## Author
 
 **Tushar** - [GitHub](https://github.com/mmtushar08)
-
-## Acknowledgments
-
-- Compression powered by pngquant, jpegoptim, and cwebp
