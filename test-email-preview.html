@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trimixo Notification</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #f2f5f7;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .header {
+            background-color: #eef2f5;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e1e4e8;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Simulating the sky/grass header from TinyPNG */
+        .header-bg {
+            background: linear-gradient(to bottom, #dbebf0 0%, #ffffff 100%);
+            padding: 40px 0;
+        }
+
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .content {
+            padding: 40px;
+            color: #4a4a4a;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .btn {
+            display: inline-block;
+            background-color: #8cc63f;
+            color: #ffffff;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 16px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .btn:hover {
+            background-color: #7ab332;
+        }
+
+        .footer {
+            background-color: #f9f9f9;
+            padding: 20px;
+            text-align: center;
+            color: #888;
+            font-size: 12px;
+        }
+
+        .link {
+            color: #0099e5;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header-bg" style="text-align: center;">
+            <div class="logo">Trimixo</div>
+        </div>
+        <div class="content">
+            <p>Hi there,</p>
+            <p>Here is the link to your dashboard. Go grab your API key!</p>
+            <p>You can always access your dashboard again purely by logging in.</p>
+            <div style="text-align: center;"><a href="http://localhost:5173/dashboard" class="btn">Visit your
+                    dashboard</a></div>
+            <p>Have a wonderful day!</p>
+            <p><em>Team Trimixo</em></p>
+        </div>
+        <div class="footer">
+            <p>This email was sent to you because you signed up for Trimixo.</p>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,32 +1,58 @@
-const { exec } = require("child_process");
+const sharp = require("sharp");
 const path = require("path");
+const fs = require("fs");
 
-exports.runCompression = (input, output, format) => {
-  return new Promise((resolve, reject) => {
-    const absInput = path.resolve(input);
-    const absOutput = path.resolve(output);
+exports.runCompression = async (input, output, format, quality, method, width, height, preserve) => {
+  try {
+    const pipeline = sharp(input);
 
-    // We mount the project root (.. from api) to /app in the container
-    const projectRoot = path.resolve(__dirname, "..", "..");
+    // 1. Resize
+    if (width || height) {
+      // Parse integers if they are strings
+      const w = width ? parseInt(width) : null;
+      const h = height ? parseInt(height) : null;
 
-    // Calculate paths relative to project root
-    const relInput = path.relative(projectRoot, absInput).replace(/\\/g, "/");
-    const relOutput = path.relative(projectRoot, absOutput).replace(/\\/g, "/");
+      // Method mapping: 'fit' -> { fit: 'inside' }, 'fill' -> { fit: 'cover' }
+      // Default to 'inside' to preserve aspect ratio within box, unless otherwise specified
+      const options = {
+        fit: method === 'fill' ? 'cover' : 'inside',
+        withoutEnlargement: true
+      };
 
-    // Entrypoint is /bin/bash, so we pass the script path directly
-    const command = `docker run --rm -v "${projectRoot}:/app" img-compress-engine /app/engine/compress.sh "/app/${relInput}" "/app/${relOutput}" "${format || ""}"`;
+      pipeline.resize(w, h, options);
+    }
 
-    exec(command, (error, stdout, stderr) => {
-      // Always log output for debugging
-      console.log("[Engine Command]:", command);
-      if (stderr) console.error("[Engine Stderr]:", stderr);
-      if (stdout) console.log("[Engine Stdout]:", stdout);
+    // 2. Format & Quality
+    // Map 'jpg' -> 'jpeg' for sharp
+    let targetFormat = format ? format.toLowerCase() : path.extname(output).replace('.', '').toLowerCase();
+    if (targetFormat === 'jpg') targetFormat = 'jpeg';
 
-      if (error) {
-        const fullError = `Command failed with exit code ${error.code}\nStderr: ${stderr}\nStdout: ${stdout}`;
-        return reject(new Error(fullError));
-      }
-      resolve(stdout);
-    });
-  });
+    // Normalize quality
+    const q = quality ? parseInt(quality) : 80;
+
+    // Apply format-specific options
+    if (targetFormat === 'jpeg') {
+      pipeline.jpeg({ quality: q, mozjpeg: true });
+    } else if (targetFormat === 'png') {
+      pipeline.png({ quality: q, compressionLevel: 9 });
+    } else if (targetFormat === 'webp') {
+      pipeline.webp({ quality: q });
+    } else {
+      // Fallback for others or if format detection failed
+      // (Sharp infers from toFile extension if not explicit)
+    }
+
+    // 3. Metadata
+    if (preserve === 'true' || preserve === true) {
+      pipeline.keepMetadata();
+    }
+
+    // 4. Output
+    await pipeline.toFile(output);
+
+    return "Compression successful";
+
+  } catch (error) {
+    throw new Error(`Compression failed: ${error.message}`);
+  }
 };

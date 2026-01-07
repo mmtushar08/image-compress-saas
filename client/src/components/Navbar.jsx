@@ -3,11 +3,12 @@ import { Link, useLocation } from 'react-router-dom';
 export default function Navbar() {
     const location = useLocation();
     const path = location.pathname;
+    const isLoggedIn = !!localStorage.getItem('trimixo_auth');
 
     return (
         <header className="navbar">
             <Link to="/" className="brand">
-                <span className="logo-icon">🐼</span> SmartCompress
+                <span className="logo-icon">🐼</span> Trimixo
             </Link>
             <nav className="nav-menu">
                 <Link to="/" className={`nav-link ${path === '/' ? 'active' : ''}`}>
@@ -16,6 +17,18 @@ export default function Navbar() {
                 <Link to="/pricing" className={`nav-link ${path === '/pricing' ? 'active' : ''}`}>
                     Pricing
                 </Link>
+                <Link to="/developers" className={`nav-link ${path === '/developers' ? 'active' : ''}`}>
+                    Developer API
+                </Link>
+                {isLoggedIn ? (
+                    <Link to="/dashboard" className="nav-btn">
+                        Dashboard
+                    </Link>
+                ) : (
+                    <Link to="/login" className="nav-btn">
+                        Login
+                    </Link>
+                )}
             </nav>
         </header>
     );

@@ -1,0 +1,9 @@
+# API Keys Configuration
+
+## Pro API Keys
+# Add your Pro user API keys here (one per line)
+# Format: sk_live_[unique_identifier]
+
+# Example:
+# sk_live_demo_pro_key_12345
+# sk_live_user_abc123xyz

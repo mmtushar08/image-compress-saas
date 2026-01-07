@@ -1,7 +1,8 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { UploadCloud } from 'lucide-react';
+import gsap from 'gsap';
 import FAQ from './FAQ';
 
 export default function Home() {
@@ -9,58 +10,104 @@ export default function Home() {
     const [downloadAllVisible, setDownloadAllVisible] = useState(false);
     const fileInputRef = useRef(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [limitInfo, setLimitInfo] = useState({ remaining: 10, maxFileSize: 5 * 1024 * 1024, plan: 'guest' });
 
-    // Constants
-    const MAX_LIMIT = 20;
-    const MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    // Initial limit check
+    useEffect(() => {
+        checkLimit().then(setLimitInfo);
+    }, []);
 
     // Helper to format file size
     const formatFileSize = (bytes) => {
         if (bytes >= 1024 * 1024) {
-            return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+            return (bytes / (1024 * 1024)).toFixed(0) + ' MB';
         }
-        return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / 1024).toFixed(0) + ' KB';
+    };
+
+    const getApiKey = () => {
+        try {
+            const auth = JSON.parse(localStorage.getItem('trimixo_auth'));
+            return auth ? auth.apiKey : null;
+        } catch (e) {
+            return null;
+        }
     };
 
     const checkLimit = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/check-limit");
+            const apiKey = getApiKey();
+            const headers = apiKey ? { 'x-api-key': apiKey } : {};
+
+            const res = await fetch("/api/check-limit", { headers });
             const data = await res.json();
-            return data.remaining;
+            return {
+                remaining: data.remaining,
+                maxFileSize: data.maxFileSize || 5 * 1024 * 1024,
+                plan: data.plan
+            };
         } catch (e) {
             console.error("Failed to check limit", e);
-            return MAX_LIMIT; // Fail open
+            return { remaining: 10, maxFileSize: 5 * 1024 * 1024, plan: 'guest' };
         }
     };
 
     const handleFiles = async (files) => {
-        if (!files || files.length === 0) return;
+        try {
+            console.log("handleFiles called with", files);
+            if (!files || files.length === 0) return;
 
-        // Validate size first
-        const validFiles = Array.from(files).filter(file => {
-            if (file.size > MAX_SIZE) {
-                alert(`${file.name} is too large (max 10MB).`);
-                return false;
+            // Fetch limits from server first (to be plan-aware)
+            let currentLimitInfo;
+            try {
+                currentLimitInfo = await checkLimit();
+            } catch (err) {
+                console.error("Check limit failed, using defaults", err);
+                currentLimitInfo = { remaining: 10, maxFileSize: 5 * 1024 * 1024, plan: 'guest' };
             }
-            return true;
-        });
 
-        if (validFiles.length === 0) return;
+            // Update state to match new info
+            setLimitInfo(currentLimitInfo);
 
-        // Check backend limit
-        const remaining = await checkLimit();
-        if (remaining <= 0) {
-            alert("Daily limit reached. Please upgrade to Pro.");
-            return;
+            // Validate size first
+            const validFiles = Array.from(files).filter(file => {
+                if (file.size > currentLimitInfo.maxFileSize) {
+                    const limitMb = currentLimitInfo.maxFileSize / (1024 * 1024);
+                    // Add a dummy 'error' item to show the message in the UI instead of Alert
+                    const id = Math.random().toString(36).substring(7);
+                    setItems(prev => [{
+                        id,
+                        file,
+                        status: 'error',
+                        error: `File too large (Max ${limitMb} MB). Please upgrade.`,
+                        progress: 100,
+                        blob: null,
+                        downloadUrl: null,
+                        filename: file.name,
+                        stats: null
+                    }, ...prev]);
+                    return false;
+                }
+                return true;
+            });
+
+            if (validFiles.length === 0) return;
+
+            if (currentLimitInfo.remaining <= 0) {
+                // Show limit error as a special banner or just an error item
+                alert("Daily limit reached. Please upgrade for more."); // Keeping this single alert as it's a hard block
+                return;
+            }
+
+            const filesToProcess = validFiles.slice(0, currentLimitInfo.remaining);
+
+            // Add to state and start uploading
+            filesToProcess.forEach(file => uploadFile(file));
+
+        } catch (error) {
+            console.error("Error in handleFiles:", error);
+            alert("An unexpected error occurred while processing your files: " + error.message);
         }
-
-        const filesToProcess = validFiles.slice(0, remaining);
-        if (filesToProcess.length < validFiles.length) {
-            alert(`Daily limit nearing. Only the first ${remaining} files will be processed.`);
-        }
-
-        // Add to state and start uploading
-        filesToProcess.forEach(file => uploadFile(file));
     };
 
     const uploadFile = async (file) => {
@@ -86,9 +133,13 @@ export default function Home() {
         formData.append("image", file);
 
         try {
+            const apiKey = getApiKey();
+            const headers = apiKey ? { 'x-api-key': apiKey } : {};
+
             updateItem(id, { progress: 50, status: 'compressing' });
-            const response = await fetch("http://localhost:5000/api/compress", {
+            const response = await fetch("/api/compress", {
                 method: "POST",
+                headers,
                 body: formData
             });
 
@@ -101,31 +152,64 @@ export default function Home() {
                 throw new Error(errorMessage);
             }
 
-            // Stats
-            const originalSize = response.headers.get("X-Original-Size");
-            const compressedSize = response.headers.get("X-Compressed-Size");
-            const savedPercent = response.headers.get("X-Saved-Percent");
+            // Handle Response (Detect JSON vs Blob)
+            const contentType = response.headers.get("content-type");
+            let downloadUrl = "";
+            let stats = {
+                original: response.headers.get("X-Original-Size"),
+                compressed: response.headers.get("X-Compressed-Size"),
+                saved: response.headers.get("X-Saved-Percent")
+            };
 
-            const blob = await response.blob();
-            const downloadUrl = URL.createObjectURL(blob);
-
-            const originalName = file.name;
-            const nameWithoutExt = originalName.substring(0, originalName.lastIndexOf(".")) || originalName;
-            const originalExt = originalName.split(".").pop();
-            const finalName = `${nameWithoutExt}-min.${originalExt}`;
+            let blob = null;
+            if (contentType && contentType.includes("application/json")) {
+                const data = await response.json();
+                downloadUrl = data.output.url;
+                stats = {
+                    original: data.input.size,
+                    compressed: data.output.size,
+                    saved: data.stats.saved_percent
+                };
+                // Fetch blob with auth headers too
+                const apiKey = getApiKey();
+                const headers = apiKey ? { 'x-api-key': apiKey } : {};
+                blob = await fetch(downloadUrl, { headers }).then(r => r.blob());
+            } else {
+                // Fallback for direct binary stream
+                blob = await response.blob();
+                downloadUrl = URL.createObjectURL(blob);
+            }
 
             updateItem(id, {
                 status: 'done',
                 progress: 100,
                 blob,
                 downloadUrl,
-                filename: finalName,
-                stats: {
-                    original: originalSize,
-                    compressed: compressedSize,
-                    saved: savedPercent
-                }
+                filename: file.name,
+                stats
             });
+
+            // Animate only this specific item when done
+            // We use a small timeout to let React render the DOM update first
+            setTimeout(() => {
+                const element = document.getElementById(`result-${id}`);
+                if (element) {
+                    // Flash effect
+                    gsap.fromTo(element,
+                        { backgroundColor: "#e8f5e9", scale: 1.02 },
+                        { backgroundColor: "#fff", scale: 1, duration: 0.5, ease: "power2.out" }
+                    );
+
+                    // Confetti-like bounce for the success badge
+                    const badge = element.querySelector('.success-badge');
+                    if (badge) {
+                        gsap.fromTo(badge,
+                            { scale: 0, rotation: -20 },
+                            { scale: 1, rotation: 0, duration: 0.6, ease: "back.out(1.7)" }
+                        );
+                    }
+                }
+            }, 100);
 
         } catch (error) {
             updateItem(id, { status: 'error', error: error.message });
@@ -148,7 +232,7 @@ export default function Home() {
 
         try {
             const content = await zip.generateAsync({ type: "blob" });
-            saveAs(content, "smart-compress-images.zip");
+            saveAs(content, "trimixo-images.zip");
         } catch (err) {
             console.error(err);
             alert("Failed to zip files");
@@ -160,12 +244,14 @@ export default function Home() {
     const doneCount = items.filter(i => i.status === 'done').length;
     const showDownloadAll = doneCount >= 2;
 
+    const containerRef = useRef(null);
+
     return (
-        <main>
+        <main ref={containerRef}>
             <section className="hero">
                 <div className="hero-content">
-                    <h1>Smart WebP, PNG and JPEG compression</h1>
-                    <p>More than 1 billion images optimized! SmartCompress uses smart lossy compression techniques to reduce the file size of your images.</p>
+                    <h1>Trimixo - Smart WebP, PNG and JPEG compression</h1>
+                    <p>More than 1 billion images optimized! Trimixo uses smart lossy compression techniques to reduce the file size of your images.</p>
                 </div>
 
                 <div
@@ -176,6 +262,8 @@ export default function Home() {
                     onDrop={(e) => {
                         e.preventDefault();
                         e.currentTarget.classList.remove('dragover');
+                        // Animate drop
+                        gsap.fromTo(e.currentTarget, { scale: 0.95 }, { scale: 1, duration: 0.3, ease: 'elastic.out(1, 0.5)' });
                         handleFiles(e.dataTransfer.files);
                     }}
                 >
@@ -184,7 +272,7 @@ export default function Home() {
                             <UploadCloud size={48} />
                         </div>
                         <p className="drop-text">Drop your WebP, PNG or JPEG files here!</p>
-                        <p className="limit-text">Up to 10 MB each.</p>
+                        <p className="limit-text">Up to {formatFileSize(limitInfo.maxFileSize)} each.</p>
                     </div>
                     <input
                         type="file"
@@ -193,10 +281,24 @@ export default function Home() {
                         className="hidden-input"
                         multiple
                         onChange={(e) => {
-                            handleFiles(e.target.files);
+                            if (e.target.files && e.target.files.length > 0) {
+                                // Animate select
+                                gsap.fromTo('.upload-zone', { scale: 0.95 }, { scale: 1, duration: 0.3, ease: 'elastic.out(1, 0.5)' });
+                                const filesArray = Array.from(e.target.files);
+                                handleFiles(filesArray);
+                            }
                             e.target.value = ''; // Reset so we can select same file again
                         }}
                     />
+                </div>
+
+                <div className="security-note" style={{ textAlign: 'center', marginTop: '1.5rem', color: '#666' }}>
+                    <p style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: '0.9rem' }}>
+                        🔒 <strong>Privacy Guaranteed:</strong> Images are processed securely and deleted automatically after compression.
+                    </p>
+                    <p style={{ fontSize: '0.8rem', opacity: 0.8, marginTop: '4px' }}>
+                        We do not resell, reuse, or retain your files.
+                    </p>
                 </div>
             </section>
 
@@ -215,7 +317,7 @@ export default function Home() {
 
             <section className="results-container">
                 {items.map(item => (
-                    <div key={item.id} className="result-item">
+                    <div key={item.id} id={`result-${item.id}`} className="result-item">
                         <div className="file-info">
                             <div className="file-icon">{item.file.name.split('.').pop().toUpperCase()}</div>
                             <div className="file-details">

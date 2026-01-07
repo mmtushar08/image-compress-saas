@@ -1,4 +1,4 @@
-# SmartCompress - Image Compression SaaS
+# Trimixo - Image Compression SaaS
 
 A modern image compression tool built with React and Node.js. Compress PNG, JPG, and WebP images with smart lossy compression techniques.
 

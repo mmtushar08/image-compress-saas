@@ -1,0 +1,281 @@
+/* API Reference Split-Pane Layout */
+.docs-layout {
+    display: flex;
+    min-height: 100vh;
+    background: #ffffff;
+}
+
+/* Sidebar Styling */
+.docs-sidebar {
+    width: 260px;
+    background: #f8f9fb;
+    border-right: 1px solid #eef0f3;
+    padding: 2rem 0;
+    position: sticky;
+    top: 70px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+    z-index: 10;
+}
+
+.sidebar-group {
+    margin-bottom: 2rem;
+}
+
+.sidebar-group h4 {
+    padding: 0 1.5rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #999;
+    margin-bottom: 0.75rem;
+}
+
+.sidebar-group ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar-link {
+    padding: 0.6rem 1.5rem;
+    font-size: 0.9rem;
+    color: #4a5568;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+}
+
+.sidebar-link:hover {
+    background: #edf2f7;
+    color: var(--primary);
+}
+
+.sidebar-link.active {
+    background: #eef8f2;
+    color: var(--primary);
+    border-left-color: var(--primary);
+    font-weight: 600;
+}
+
+/* Main Area Layout */
+.docs-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.docs-header-hero {
+    padding: 4rem 3rem 2rem;
+    background: #ffffff;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.docs-header-hero h1 {
+    font-size: 2.8rem;
+    font-weight: 800;
+    margin-bottom: 1rem;
+    color: #1a202c;
+}
+
+.docs-header-hero p {
+    font-size: 1.2rem;
+    color: #718096;
+    max-width: 800px;
+}
+
+/* API Grid Section */
+.api-section {
+    display: flex;
+    border-bottom: 1px solid #f0f0f0;
+    min-height: 400px;
+}
+
+.section-content {
+    flex: 1;
+    padding: 4rem 3rem;
+    max-width: 700px;
+    background: #ffffff;
+}
+
+.section-examples {
+    flex: 1.2;
+    background: #1d212a;
+    padding: 4rem 2rem;
+    position: relative;
+}
+
+/* Typography in Content */
+.section-content h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    color: #2d3748;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.section-content p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: #4a5568;
+    margin-bottom: 1.5rem;
+}
+
+/* Tables in Content */
+.params-table {
+    margin: 2rem 0;
+}
+
+.params-table table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.params-table th {
+    text-align: left;
+    padding: 12px;
+    font-size: 0.85rem;
+    color: #a0aec0;
+    text-transform: uppercase;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.params-table td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #edf2f7;
+    font-size: 0.95rem;
+}
+
+.params-table code {
+    background: #f7fafc;
+    color: #e53e3e;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* Code Example Styling */
+.code-container {
+    border-radius: 12px;
+    background: #282c34;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+.code-header {
+    background: #343a46;
+    display: flex;
+    padding: 0 10px;
+    border-bottom: 1px solid #444;
+}
+
+.code-tab {
+    background: transparent;
+    border: none;
+    color: #a0aec0;
+    padding: 12px 18px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    border-bottom: 2px solid transparent;
+}
+
+.code-tab:hover {
+    color: #ffffff;
+}
+
+.code-tab.active {
+    color: #48bb78;
+    border-bottom-color: #48bb78;
+}
+
+.code-body {
+    padding: 1.5rem;
+    position: relative;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.code-body pre {
+    margin: 0;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #d1d5db;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: #4a5568;
+    color: white;
+    border: none;
+    padding: 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+}
+
+/* Endpoint Badge */
+.endpoint-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: #edf2f7;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: monospace;
+    margin-bottom: 2rem;
+}
+
+.method-label {
+    background: #48bb78;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 3px;
+}
+
+/* Auth Methods Grid */
+.auth-grid {
+    display: grid;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.auth-card {
+    background: #f7fafc;
+    padding: 1.5rem;
+    border-radius: 12px;
+    border: 1px solid #edf2f7;
+}
+
+.auth-card h4 {
+    margin-bottom: 0.5rem;
+    color: #2d3748;
+}
+
+/* Responsive */
+@media (max-width: 1100px) {
+    .api-section {
+        flex-direction: column;
+    }
+
+    .section-content,
+    .section-examples {
+        flex: none;
+        width: 100%;
+        max-width: 100%;
+    }
+}
