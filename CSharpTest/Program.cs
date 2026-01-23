@@ -52,7 +52,7 @@ class Program
         try
         {
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_b4eb8968065c578f25722b10");
+            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_placeholder");
             var response = await client.GetAsync($"{API_URL}/api/check-limit");
 
             if (response.IsSuccessStatusCode)
@@ -86,7 +86,7 @@ class Program
             }
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_b4eb8968065c578f25722b10");
+            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_placeholder");
             using var form = new MultipartFormDataContent();
             using var fileStream = File.OpenRead(TEST_IMAGE);
             
@@ -138,7 +138,7 @@ class Program
             }
 
             using var client = new HttpClient();
-            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_b4eb8968065c578f25722b10");
+            client.DefaultRequestHeaders.Add("X-API-Key", "sk_test_placeholder");
             using var form = new MultipartFormDataContent();
             
             // Image 1

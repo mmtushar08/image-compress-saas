@@ -180,7 +180,7 @@ All test scripts use the following configuration:
 ```
 API_URL: http://localhost:5000
 TEST_IMAGE: test_quality_90.jpg
-API_KEY: sk_test_b4eb8968065c578f25722b10 (where applicable)
+API_KEY: sk_test_placeholder (where applicable)
 ```
 
 ---

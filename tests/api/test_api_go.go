@@ -72,7 +72,7 @@ func testCompressImage() bool {
 		return false
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("X-API-Key", "sk_test_b4eb8968065c578f25722b10")
+	req.Header.Set("X-API-Key", "sk_test_placeholder")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
@@ -117,7 +117,7 @@ func testAllConversions() bool {
 
 		req, _ := http.NewRequest("POST", API_URL+"/api/compress", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType())
-		req.Header.Set("X-API-Key", "sk_test_b4eb8968065c578f25722b10")
+		req.Header.Set("X-API-Key", "sk_test_placeholder")
 
 		client := &http.Client{}
 		resp, err := client.Do(req)
@@ -168,7 +168,7 @@ func testPreserveMetadata() bool {
 
 	req, _ := http.NewRequest("POST", API_URL+"/api/compress", body)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("X-API-Key", "sk_test_b4eb8968065c578f25722b10")
+	req.Header.Set("X-API-Key", "sk_test_placeholder")
 
 	client := &http.Client{}
 	resp, _ := client.Do(req)
