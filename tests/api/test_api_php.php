@@ -39,7 +39,7 @@ function testCheckLimit() {
     
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/check-limit');
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
     $response = curl_exec($ch);
@@ -70,7 +70,7 @@ function testCompressImage() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/compress');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
         'image' => new CURLFile(TEST_IMAGE),
         'quality' => 80,
@@ -123,7 +123,7 @@ function testBatchCompression() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/compress/batch');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
         'images[0]' => new CURLFile('test_quality_90.jpg'),
         'images[1]' => new CURLFile('test_quality_10.jpg')
@@ -159,7 +159,7 @@ function testFormatConversion() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/compress');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
         'image' => new CURLFile(TEST_IMAGE),
         'format' => 'webp'
@@ -209,7 +209,7 @@ function testResize() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/compress');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
         'image' => new CURLFile(TEST_IMAGE),
         'width' => 100
@@ -256,7 +256,7 @@ function testMetadataPreservation() {
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, API_URL . '/api/compress');
     curl_setopt($ch, CURLOPT_POST, 1);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_b4eb8968065c578f25722b10']);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['X-API-Key: sk_test_placeholder']);
     curl_setopt($ch, CURLOPT_POSTFIELDS, [
         'image' => new CURLFile(TEST_IMAGE),
         'preserveMetadata' => 'true'
