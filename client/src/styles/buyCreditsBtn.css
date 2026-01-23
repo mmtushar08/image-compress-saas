@@ -1,0 +1,9 @@
+.buy-credits-btn {
+    background: linear-gradient(135deg, #48c774 0%, #3abb68 100%) !important;
+    margin-bottom: 0.5rem;
+}
+
+.buy-credits-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(72, 199, 116, 0.3);
+}

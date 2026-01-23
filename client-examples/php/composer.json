@@ -1,0 +1,20 @@
+{
+    "name": "smartcompress/client",
+    "description": "SmartCompress API Client for PHP",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "SmartCompress"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-curl": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "SmartCompress\\": "src/"
+        }
+    }
+}

@@ -145,16 +145,26 @@
     "id": "1767505153245",
     "email": "mmtushar08@gmail.com",
     "apiKey": "tr_7850c175db92216cb37046a0318ed8f0",
-    "plan": "pro",
+    "plan": "web-ultra",
     "credits": 1000,
     "usage": 0,
     "createdAt": "2026-01-04T05:39:13.245Z",
-    "lastResetDate": "2026-01-06T18:43:37.357Z",
-    "expiresAt": "2026-02-06T18:43:37.357Z",
+    "lastResetDate": "2026-01-11T14:17:54.594Z",
+    "expiresAt": "2026-02-11T14:17:54.594Z",
     "dailyUsage": 0,
-    "lastUsedDate": "2026-01-04",
-    "magicToken": "a17911ed901567b7bbc897667af84a3de4dc4a1d7858079ad8dce2990b93211b",
-    "tokenExpiry": "2026-01-07T19:25:30.730Z"
+    "lastUsedDate": "2026-01-11",
+    "magicToken": "9a96149e1fb100894a8f3347e2dc7b3d8d90a0fe54753c6ffce87f075dd22d0b",
+    "tokenExpiry": "2026-01-12T14:17:54.594Z",
+    "webLimit": -1,
+    "apiCredits": 0,
+    "billingCycle": "yearly",
+    "invoiceDetails": {
+      "companyName": "",
+      "taxId": "",
+      "address": "",
+      "city": "",
+      "zip": ""
+    }
   },
   {
     "id": "1767506995440",
@@ -241,5 +251,21 @@
     "expiresAt": "2026-02-06T18:58:42.668Z",
     "magicToken": "9c3f022303dcf22d5a0f9e8e28ca86608edc0044e81f66b8da3a86dadc03a8e3",
     "tokenExpiry": "2026-01-07T18:58:42.668Z"
+  },
+  {
+    "id": "1768128287258",
+    "email": "testuser@example.com",
+    "apiKey": "tr_2aa5cf7193368f2f59c6c9ccc73b6b70",
+    "plan": "free",
+    "webLimit": 20,
+    "apiCredits": 0,
+    "usage": 0,
+    "createdAt": "2026-01-11T10:44:47.244Z",
+    "lastResetDate": "2026-01-11T10:44:47.244Z",
+    "expiresAt": null,
+    "billingCycle": "yearly",
+    "invoiceDetails": {},
+    "magicToken": "2f9abbe888656f71783d86c5abc6f47702ee4b76daef595cb9517d09cbc15656",
+    "tokenExpiry": "2026-01-12T10:44:47.244Z"
   }
 ]

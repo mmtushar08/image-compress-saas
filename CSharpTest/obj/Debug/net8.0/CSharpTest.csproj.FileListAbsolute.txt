@@ -1,0 +1,15 @@
+E:\my_project\github\image-compress-saas\CSharpTest\bin\Debug\net8.0\CSharpTest.exe
+E:\my_project\github\image-compress-saas\CSharpTest\bin\Debug\net8.0\CSharpTest.deps.json
+E:\my_project\github\image-compress-saas\CSharpTest\bin\Debug\net8.0\CSharpTest.runtimeconfig.json
+E:\my_project\github\image-compress-saas\CSharpTest\bin\Debug\net8.0\CSharpTest.dll
+E:\my_project\github\image-compress-saas\CSharpTest\bin\Debug\net8.0\CSharpTest.pdb
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.GeneratedMSBuildEditorConfig.editorconfig
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.AssemblyInfoInputs.cache
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.AssemblyInfo.cs
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.csproj.CoreCompileInputs.cache
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.sourcelink.json
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.dll
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\refint\CSharpTest.dll
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.pdb
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\CSharpTest.genruntimeconfig.cache
+E:\my_project\github\image-compress-saas\CSharpTest\obj\Debug\net8.0\ref\CSharpTest.dll

@@ -1,0 +1,53 @@
+{
+    "success": true,
+    "has_api_key": true,
+    "usage": {
+        "used": 245,
+        "remaining": 5755,
+        "total": 6000,
+        "percentage": 4.1
+    },
+    "plan": {
+        "id": "api-pro",
+        "name": "Api Pro",
+        "base_limit": 5000,
+        "max_file_size": 10485760,
+        "max_file_size_mb": "10",
+        "max_pixels": 36000000,
+        "allowed_formats": [
+            "jpg",
+            "jpeg",
+            "png",
+            "webp"
+        ],
+        "features": [
+            "compress",
+            "resize"
+        ],
+        "rate_limit": 2
+    },
+    "addons": {
+        "current_credits": 1000,
+        "purchase_history": [
+            {
+                "type": "small-boost",
+                "credits": 1000,
+                "price": 8,
+                "purchased_at": "2026-01-15T10:30:00.000Z",
+                "payment_id": "pi_abc123"
+            }
+        ]
+    },
+    "cycle": {
+        "reset_at": "2026-02-01T00:00:00.000Z",
+        "days_until_reset": 11,
+        "billing_cycle_start": "2026-01-01T00:00:00.000Z"
+    },
+    "api_key": {
+        "id": "key_abc123",
+        "key_preview": "sk_live_ab...xyz",
+        "is_sandbox": false,
+        "created_at": "2026-01-01T00:00:00.000Z",
+        "last_used_at": "2026-01-20T18:00:00.000Z"
+    }
+}

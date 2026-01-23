@@ -1,0 +1,23 @@
+{
+    "name": "shrinkix/php-sdk",
+    "description": "Official PHP SDK for the Shrinkix Image Compression API",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Shrinkix",
+            "email": "support@shrinkix.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "ext-curl": "*",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "Shrinkix\\": "src/"
+        }
+    },
+    "minimum-stability": "stable"
+}

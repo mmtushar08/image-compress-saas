@@ -1,0 +1,1 @@
+{"input":{"size":49925,"type":"image/jpeg"},"output":{"size":13084,"type":"image/webp","width":1024,"height":1024,"ratio":0.2621,"url":"http://localhost:5173/api/compress/download/compressed-1768925681746-41413.webp?name=test_quality_90.webp"},"stats":{"saved_percent":73.79,"original_size":49925,"compressed_size":13084}}

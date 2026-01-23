@@ -1,0 +1,37 @@
+{
+    "name": "shrinkix",
+    "version": "1.0.0",
+    "description": "Official Node.js SDK for Shrinkix Image Optimization API",
+    "main": "src/index.js",
+    "types": "src/index.d.ts",
+    "scripts": {
+        "test": "jest",
+        "lint": "eslint src/"
+    },
+    "keywords": [
+        "shrinkix",
+        "image",
+        "optimization",
+        "compression",
+        "resize",
+        "webp",
+        "avif"
+    ],
+    "author": "Shrinkix",
+    "license": "MIT",
+    "dependencies": {
+        "form-data": "^4.0.0",
+        "node-fetch": "^2.6.7"
+    },
+    "devDependencies": {
+        "jest": "^29.0.0",
+        "eslint": "^8.0.0"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/shrinkix/shrinkix-node"
+    }
+}

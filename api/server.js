@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const helmet = require("helmet");
+const cookieParser = require("cookie-parser");
 const rateLimit = require("express-rate-limit");
+const { v4: uuidv4 } = require('uuid');
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
@@ -13,34 +15,91 @@ const app = express();
 // Trust proxy for accurate IP addresses (set to 1 for first proxy)
 app.set('trust proxy', 1);
 
-// Security headers with Helmet
+// Request ID middleware (for debugging and support)
+app.use((req, res, next) => {
+  req.id = `req_${uuidv4().substring(0, 8)}`;
+  res.setHeader('X-Request-ID', req.id);
+  next();
+});
+
+// Initialize Cron Jobs
+const initCron = require("./services/cronService");
+initCron();
+
+// HTTPS Enforcement in Production
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    if (req.header('x-forwarded-proto') !== 'https') {
+      return res.redirect(301, `https://${req.header('host')}${req.url}`);
+    }
+    next();
+  });
+}
+
+// Security headers with Helmet (Strengthened CSP)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      imgSrc: ["'self'", "blob:"], // Removed data: for security
+      connectSrc: ["'self'"],
+      frameSrc: ["'self'", "https://js.stripe.com"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
     },
+  },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
   },
   crossOriginEmbedderPolicy: false, // Allow file downloads
 }));
 
 // CORS configuration
 app.use(cors({
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    process.env.FRONTEND_URL
+  ].filter(Boolean),
   credentials: true,
   exposedHeaders: ["X-Original-Size", "X-Compressed-Size", "X-Saved-Percent", "X-Compression-Ratio", "X-Output-Format", "X-Compression-Count"]
 }));
 
 // Body parser with size limits
-app.use(express.json({ limit: '100mb' }));
-app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+app.use(express.json({
+  limit: '200mb',
+  verify: (req, res, buf) => {
+    if (req.originalUrl.includes('/webhook')) {
+      req.rawBody = buf;
+    }
+  }
+}));
+app.use(express.urlencoded({ extended: true, limit: '200mb' }));
+
+// Cookie parser for httpOnly cookies
+app.use(cookieParser());
+
+// CSRF Protection (using double-submit cookie pattern)
+const csrf = require('csurf');
+const csrfProtection = csrf({
+  cookie: {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict'
+  }
+});
 
 // General rate limiter (protects all endpoints)
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per windowMs
   message: { success: false, error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -51,11 +110,16 @@ app.use('/api/', generalLimiter);
 // Auth Middleware
 app.use(authMiddleware);
 
+// CSRF token endpoint (must be after auth middleware)
+app.get('/api/csrf-token', csrfProtection, (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+});
+
 // 2. HEALTH CHECK
 app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
-    service: "trimixo-api",
+    service: "shrinkix-api",
     uptime: process.uptime()
   });
 });
@@ -97,12 +161,20 @@ app.use(express.static(path.join(__dirname, "../client/dist")));
 const userRoutes = require("./routes/users");
 app.use("/api/users", userRoutes); // Mount before compress
 
-// Mount Compression Routes
+// Mount V1 API Routes (Professional API)
+const v1Routes = require("./routes/v1/index");
+app.use("/api/v1", v1Routes);
+
+// Mount Compression Routes (Legacy - will be deprecated)
 app.use("/api/compress", compressRoutes);
 
 // Mount Payment Routes
 const paymentRoutes = require("./routes/payments");
 app.use("/api/payments", paymentRoutes);
+
+// Mount Admin Routes
+const adminRoutes = require("./routes/admin");
+app.use("/api/admin", adminRoutes);
 
 // Fix for React Router refresh - Catch-all route to serve index.html
 app.get("*", (req, res) => {
@@ -121,7 +193,7 @@ function validateEnv() {
 
   // Set defaults
   process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-  process.env.PORT = process.env.PORT || '5000';
+  process.env.PORT = process.env.PORT || '5001';
 }
 
 validateEnv();
@@ -149,6 +221,12 @@ app.use((err, req, res, next) => {
     console.error("Unhandled error:", err.message);
   }
 
+  // DEBUG: Write to file
+  try {
+    const fs = require('fs');
+    fs.appendFileSync(path.join(__dirname, 'error.log'), `${new Date().toISOString()} - ${err.stack || err}\n`);
+  } catch (e) { console.error("Logging failed", e); }
+
   if (res.headersSent) {
     return next(err);
   }
@@ -165,8 +243,8 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+const PORT = process.env.PORT || 5001;
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ API running on http://localhost:${PORT}`);
 
   // Safety Net: Cleanup old files every 1 hour

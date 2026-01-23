@@ -1,0 +1,409 @@
+openapi: 3.0.3
+info:
+  title: Shrinkix Image Optimization API
+  description: |
+    Professional image optimization API with compression, resizing, format conversion, and more.
+    
+    ## Authentication
+    All requests require an API key in the Authorization header:
+    ```
+    Authorization: Bearer YOUR_API_KEY
+    ```
+    
+    ## Rate Limiting
+    All responses include rate limit headers:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests
+    - `X-RateLimit-Reset`: Unix timestamp when limit resets
+    - `X-Request-ID`: Unique request identifier
+    
+    ## Sandbox Mode
+    Test without consuming quota by adding header:
+    ```
+    X-Mode: sandbox
+    ```
+  version: 1.0.0
+  contact:
+    name: Shrinkix Support
+    email: support@shrinkix.com
+    url: https://shrinkix.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.shrinkix.com/v1
+    description: Production server
+  - url: http://localhost:5000/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Optimization
+    description: Image optimization operations
+  - name: Usage
+    description: Usage and quota management
+  - name: Validation
+    description: Pre-upload validation
+
+paths:
+  /optimize:
+    post:
+      tags:
+        - Optimization
+      summary: Optimize an image
+      description: |
+        Single, powerful endpoint for image optimization.
+        Supports compression, resizing, cropping, format conversion, and metadata control.
+        
+        **Operation Limits:**
+        - Free: 1 operation
+        - Starter/API Pro: 2 operations
+        - Pro/API Ultra: 3 operations
+        - Business: 4 operations
+        
+        **Operation Counting:**
+        - Compression always counts as 1
+        - Resize = +1
+        - Crop = +1
+        - Format conversion = +1
+        - Metadata preservation = +1
+      operationId: optimizeImage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - image
+              properties:
+                image:
+                  type: string
+                  format: binary
+                  description: Image file (JPG, PNG, WebP, AVIF)
+                resize:
+                  type: string
+                  description: 'JSON: {"width": 1200, "height": 800, "fit": "contain"}'
+                  example: '{"width": 1200, "height": 800, "fit": "contain"}'
+                crop:
+                  type: string
+                  description: 'JSON: {"mode": "center", "ratio": "16:9"}'
+                  example: '{"mode": "center", "ratio": "16:9"}'
+                format:
+                  type: string
+                  enum: [jpg, png, webp, avif]
+                  description: Output format
+                quality:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 80
+                  description: Quality (1-100)
+                metadata:
+                  type: string
+                  enum: [strip, keep]
+                  default: strip
+                  description: Metadata handling (keep = Business only)
+      responses:
+        '200':
+          description: Optimization successful
+          headers:
+            X-RateLimit-Limit:
+              schema:
+                type: integer
+              description: Maximum requests per window
+            X-RateLimit-Remaining:
+              schema:
+                type: integer
+              description: Remaining requests
+            X-RateLimit-Reset:
+              schema:
+                type: integer
+              description: Unix timestamp when limit resets
+            X-Request-ID:
+              schema:
+                type: string
+              description: Unique request identifier
+            X-Original-Size:
+              schema:
+                type: integer
+              description: Original file size in bytes
+            X-Optimized-Size:
+              schema:
+                type: integer
+              description: Optimized file size in bytes
+            X-Savings-Percent:
+              schema:
+                type: number
+              description: Percentage saved
+            X-Operations:
+              schema:
+                type: string
+              description: Comma-separated list of operations performed
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /limits:
+    get:
+      tags:
+        - Usage
+      summary: Get plan limits
+      description: Returns plan capabilities and limits for the authenticated API key
+      operationId: getLimits
+      responses:
+        '200':
+          description: Plan limits retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanLimits'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /validate:
+    post:
+      tags:
+        - Validation
+      summary: Validate image before upload
+      description: Pre-validate image parameters to avoid wasted uploads
+      operationId: validateImage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - fileSize
+                - format
+                - width
+                - height
+              properties:
+                fileSize:
+                  type: integer
+                  description: File size in bytes
+                  example: 5000000
+                format:
+                  type: string
+                  description: Image format
+                  example: jpg
+                width:
+                  type: integer
+                  description: Image width in pixels
+                  example: 2000
+                height:
+                  type: integer
+                  description: Image height in pixels
+                  example: 1500
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResult'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /usage/stats:
+    get:
+      tags:
+        - Usage
+      summary: Get usage statistics
+      description: Returns current usage, quota, and billing cycle information
+      operationId: getUsageStats
+      responses:
+        '200':
+          description: Usage statistics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsageStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: API Key
+
+  schemas:
+    PlanLimits:
+      type: object
+      properties:
+        plan:
+          type: string
+          example: api-pro
+        max_file_size_mb:
+          type: string
+          example: "10"
+        max_pixels:
+          type: integer
+          example: 36000000
+        max_operations:
+          type: integer
+          example: 2
+        formats:
+          type: array
+          items:
+            type: string
+          example: ["jpg", "png", "webp"]
+        features:
+          type: array
+          items:
+            type: string
+          example: ["compress", "resize"]
+        rate_limit:
+          type: integer
+          example: 2
+
+    ValidationResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        warnings:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              message:
+                type: string
+        plan:
+          type: string
+        limits:
+          type: object
+          properties:
+            max_file_size_mb:
+              type: string
+            max_pixels:
+              type: integer
+            allowed_formats:
+              type: array
+              items:
+                type: string
+
+    UsageStats:
+      type: object
+      properties:
+        usage:
+          type: object
+          properties:
+            used:
+              type: integer
+            remaining:
+              type: integer
+            total:
+              type: integer
+            percentage:
+              type: number
+        plan:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            base_limit:
+              type: integer
+        addons:
+          type: object
+          properties:
+            current_credits:
+              type: integer
+            purchase_history:
+              type: array
+              items:
+                type: object
+        cycle:
+          type: object
+          properties:
+            reset_at:
+              type: string
+              format: date-time
+            days_until_reset:
+              type: integer
+
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error code
+        message:
+          type: string
+          description: Human-readable error message
+        request_id:
+          type: string
+          description: Unique request identifier
+        details:
+          type: object
+          description: Additional error details
+        docs_url:
+          type: string
+          description: Documentation URL for this error
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: OPERATION_LIMIT_EXCEEDED
+            message: "Too many operations. api-pro plan allows max 2 operations"
+            request_id: req_abc123
+            details:
+              requested_operations: 3
+              allowed_operations: 2
+            docs_url: https://docs.shrinkix.com/errors/OPERATION_LIMIT_EXCEEDED
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until quota resets
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: PLAN_LIMIT_REACHED
+            message: "Monthly limit of 5000 images exceeded"
+            request_id: req_abc123
+            details:
+              used: 5000
+              limit: 5000
+              reset_at: "2026-02-01T00:00:00Z"
+            docs_url: https://docs.shrinkix.com/errors/PLAN_LIMIT_REACHED
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+          example:
+            error: UNAUTHORIZED
+            message: "Invalid API key"
+            request_id: req_abc123
+            docs_url: https://docs.shrinkix.com/errors/UNAUTHORIZED

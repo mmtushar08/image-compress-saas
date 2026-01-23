@@ -1,0 +1,42 @@
+{
+    "name": "shrinkix/shrinkix-php",
+    "description": "Official PHP SDK for Shrinkix Image Optimization API",
+    "type": "library",
+    "keywords": [
+        "shrinkix",
+        "image",
+        "optimization",
+        "compression",
+        "resize",
+        "webp",
+        "avif"
+    ],
+    "homepage": "https://shrinkix.com",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Shrinkix",
+            "email": "support@shrinkix.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4",
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^9.0",
+        "phpstan/phpstan": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Shrinkix\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Shrinkix\\Tests\\": "tests/"
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

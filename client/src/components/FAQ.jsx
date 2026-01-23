@@ -35,7 +35,7 @@ export default function FAQ() {
         <section className="faq-section">
             <div className="faq-header">
                 <h2>Frequently Asked Questions</h2>
-                <p>Everything you need to know about Trimixo.</p>
+                <p>Everything you need to know about Shrinkix.</p>
             </div>
 
             <div className="faq-list">
