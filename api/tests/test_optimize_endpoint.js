@@ -9,7 +9,7 @@ const path = require('path');
 
 const API_URL = 'http://localhost:5000/api/v1/optimize';
 const TEST_IMAGE = path.join(__dirname, 'test-image.jpg');
-const API_KEY = 'sk_test_b4eb8968065c578f25722b10'; // Test key
+const API_KEY = 'sk_test_placeholder'; // Test key
 
 console.log('🧪 Testing /api/v1/optimize endpoint\n');
 

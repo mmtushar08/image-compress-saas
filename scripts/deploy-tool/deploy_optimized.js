@@ -62,7 +62,16 @@ archive.directory(path.join(PROJECT_ROOT, 'client', 'dist'), 'client/dist');
 // Add API files but EXCLUDE node_modules (will use existing on server)
 archive.glob('**/*', {
     cwd: path.join(PROJECT_ROOT, 'api'),
-    ignore: ['node_modules/**', 'uploads/**', 'output/**', '*.log', 'data/**']
+    ignore: [
+        'node_modules/**',
+        'uploads/**',
+        'output/**',
+        '*.log',
+        'data/**',
+        'tests/**',      // Exclude tests
+        '**/*.test.js',  // Exclude test files
+        '**/*.spec.js'
+    ]
 }, { prefix: 'api' });
 
 archive.finalize();
@@ -122,6 +131,8 @@ function uploadAndDeploy() {
 
                     // Cleanup
                     `rm /tmp/deploy-optimized.tar.gz`,
+                    `rm -rf ${REMOTE_PATH}/api/tests`, // Remove tests from server
+                    `rm -rf ${REMOTE_PATH}/client/tests`, // Remove tests from server
 
                     // Show disk usage
                     `echo ""`,

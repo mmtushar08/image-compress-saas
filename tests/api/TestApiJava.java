@@ -11,7 +11,7 @@ import java.io.IOException;
 public class TestApiJava {
     private static final String API_URL = "http://localhost:5000";
     private static final String TEST_IMAGE = "test_quality_90.jpg";
-    private static final String API_KEY = "sk_test_b4eb8968065c578f25722b10";
+    private static final String API_KEY = "sk_test_placeholder";
 
     public static void main(String[] args) {
         System.out.println("Starting API Tests with Java...");
