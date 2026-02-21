@@ -1,8 +1,18 @@
 const sharp = require("sharp");
 const path = require("path");
 const fs = require("fs");
+const { withConcurrencyLimit } = require("../utils/concurrencyLimiter");
+
+// Cap Sharp's internal libvips thread pool to 1 thread per job.
+// This prevents a single compression from grabbing all CPU cores.
+// Multiple jobs still run (up to MAX_CONCURRENT), providing throughput.
+sharp.concurrency(1);
 
 exports.runCompression = async (input, output, format, quality, method, width, height, preserve) => {
+  return withConcurrencyLimit(() => _compress(input, output, format, quality, method, width, height, preserve));
+};
+
+async function _compress(input, output, format, quality, method, width, height, preserve) {
   try {
     // Get input file size for comparison
     const inputSize = fs.statSync(input).size;
