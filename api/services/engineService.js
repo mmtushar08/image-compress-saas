@@ -36,16 +36,19 @@ exports.runCompression = async (input, output, format, quality, method, width, h
     let q = quality ? parseInt(quality) : null;
 
     if (!q) {
-      // Adaptive quality based on file size
+      // Adaptive quality based on file size (CPU-friendly settings)
       if (inputSize < 50 * 1024) {
         // Small files (< 50KB) - likely already optimized
         q = 90; // High quality to avoid re-encoding bloat
       } else if (inputSize < 500 * 1024) {
         // Medium files (50KB - 500KB)
         q = 82;
+      } else if (inputSize < 2 * 1024 * 1024) {
+        // Large files (500KB - 2MB)
+        q = 78; // Reduced from 75 to balance quality and CPU usage
       } else {
-        // Large files (> 500KB)
-        q = 75; // More aggressive compression
+        // Very large files (> 2MB) - reduce CPU load significantly
+        q = 75; // Conservative compression to prevent CPU overload
       }
     }
 
@@ -53,11 +56,11 @@ exports.runCompression = async (input, output, format, quality, method, width, h
     if (targetFormat === 'jpeg') {
       pipeline.jpeg({ quality: q, mozjpeg: true });
     } else if (targetFormat === 'png') {
-      pipeline.png({ quality: q, compressionLevel: 9 });
+      pipeline.png({ quality: q, compressionLevel: 6 }); // level 9 = max CPU; 6 = good balance
     } else if (targetFormat === 'webp') {
-      pipeline.webp({ quality: q, effort: 6 }); // effort 6 = better compression
+      pipeline.webp({ quality: q, effort: 4 }); // effort 4 = balanced compression/speed for production
     } else if (targetFormat === 'avif') {
-      pipeline.avif({ quality: q, effort: 6 });
+      pipeline.avif({ quality: q, effort: 3 }); // effort 3 = good quality, much less CPU than 4
     } else {
       // Fallback for others or if format detection failed
       // (Sharp infers from toFile extension if not explicit)

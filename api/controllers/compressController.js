@@ -116,9 +116,9 @@ exports.compressImage = async (req, res, next) => {
     const originalExt = path.extname(req.file.originalname);
     const finalExt = outputFormat ? `.${outputFormat}` : originalExt;
 
-    outputPath = path.join("output", `compressed-${Date.now()}-${Math.round(Math.random() * 1E5)}${finalExt}`);
+    outputPath = path.join(__dirname, "..", "output", `compressed-${Date.now()}-${Math.round(Math.random() * 1E5)}${finalExt}`);
 
-    // Ensure output dir
+    // Ensure output dir (absolute path)
     const outputDir = path.dirname(outputPath);
     if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
@@ -294,7 +294,7 @@ exports.compressBatch = async (req, res, next) => {
       }
 
       const originalExt = path.extname(file.originalname);
-      const outputPath = path.join("output", `batch-${Date.now()}-${Math.round(Math.random() * 1E5)}-${file.filename}`);
+      const outputPath = path.join(__dirname, "..", "output", `batch-${Date.now()}-${Math.round(Math.random() * 1E5)}-${file.filename}`);
       tempFiles.push(outputPath);
 
       await runCompression(file.path, outputPath, null);
@@ -333,12 +333,9 @@ exports.compressBatch = async (req, res, next) => {
     res.setHeader("X-Total-Compressed-Size", results.reduce((sum, r) => sum + r.compressedSize, 0).toString());
     res.setHeader("Content-Type", "application/zip");
     res.setHeader("Content-Disposition", `attachment; filename="compressed-images.zip"`);
-    res.setHeader("X-Total-Files", compressedFiles.length.toString());
-    res.setHeader("X-Total-Original-Size", results.reduce((sum, r) => sum + r.originalSize, 0).toString());
-    res.setHeader("X-Total-Compressed-Size", results.reduce((sum, r) => sum + r.compressedSize, 0).toString());
 
-    // Create ZIP archive and stream directly to response
-    const archive = archiver("zip", { zlib: { level: 9 } });
+    // Create ZIP archive and stream directly to response (level 6 = good balance of speed vs compression)
+    const archive = archiver("zip", { zlib: { level: 6 } });
 
     // Handle archive errors
     archive.on("error", (err) => {
