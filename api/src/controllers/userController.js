@@ -54,9 +54,8 @@ const PLANS = {
     free: { name: 'Free', price: 0, webLimit: 20, apiCredits: 500, maxFileSize: 5 * 1024 * 1024, credits: 0 },
     'web-pro': { name: 'Web Pro', price: 39, webLimit: -1, apiCredits: 500, maxFileSize: 75 * 1024 * 1024, credits: 0 },
     'web-ultra': { name: 'Web Ultra', price: 59, webLimit: -1, apiCredits: 500, maxFileSize: 150 * 1024 * 1024, credits: 0 },
-    pro: { credits: 1000, name: 'Pro API', price: 9, maxFileSize: 25 * 1024 * 1024 }, // Legacy
-    'api-pro': { name: 'API Pro', price: 35, webLimit: 20, apiCredits: 5000, maxFileSize: 25 * 1024 * 1024, credits: 5000 },
-    'api-ultra': { name: 'API Ultra', price: 90, webLimit: 20, apiCredits: 15000, maxFileSize: 50 * 1024 * 1024, credits: 15000 },
+    'api-pro': { name: 'API Pro', price: 35, webLimit: 20, apiCredits: 5000, maxFileSize: 25 * 1024 * 1024, credits: 0 },
+    'api-ultra': { name: 'API Ultra', price: 90, webLimit: 20, apiCredits: 15000, maxFileSize: 50 * 1024 * 1024, credits: 0 },
     'credit-1.5k': { name: '1,500 Credits', price: 14, credits: 1500, type: 'credit' },
     'credit-3.5k': { name: '3,500 Credits', price: 28, credits: 3500, type: 'credit' },
     'credit-6.5k': { name: '6,500 Credits', price: 56, credits: 6500, type: 'credit' }
@@ -65,13 +64,13 @@ exports.PLANS = PLANS;
 
 exports.register = async (req, res) => {
     try {
-        const { email, plan } = req.body;
+        const { email, plan, isSignup } = req.body;
         const cleanEmail = sanitizeString(email).toLowerCase();
 
         let existing = db.prepare('SELECT * FROM users WHERE email = ?').get(cleanEmail);
 
         if (existing) {
-            // Send login link instead
+            // Send login link for existing users
             const magicToken = crypto.randomBytes(32).toString('hex');
             const tokenExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
 
@@ -90,29 +89,57 @@ exports.register = async (req, res) => {
                 }
             } catch (e) { /* ignore parse error */ }
 
-            await sendMagicLink(cleanEmail, link, name);
+            // Fire and forget email
+            sendMagicLink(cleanEmail, link, name).catch(err => console.error("Async Magic Link Error:", err));
 
-            return res.json({ success: true, message: 'User exists. Magic link sent.' });
+            return res.json({ success: true, message: 'Magic link sent to your email.' });
         }
 
-        // Create new user
+        // If user doesn't exist, check if it's a valid signup attempt
+        if (!isSignup) {
+            // Reject login attempt for non-existent users
+            return res.status(404).json({
+                success: false,
+                error: 'No account found with this email. Please sign up from the Developer page first.'
+            });
+        }
+
+        // Create new user (Only if isSignup is true)
         const apiKey = 'sk_' + crypto.randomBytes(24).toString('hex');
         const apiKeyHash = await bcrypt.hash(apiKey, 10);
         const userId = crypto.randomUUID();
         const selectedPlan = PLANS[plan] ? plan : 'free';
         const planConfig = PLANS[selectedPlan];
 
+        // Generate Magic Token for new user immediately
+        const magicToken = crypto.randomBytes(32).toString('hex');
+        const tokenExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
         db.prepare(`INSERT INTO users (
-            id, email, apiKey, apiKeyHash, plan, webLimit, apiCredits, usage, dailyUsage, credits, createdAt
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, 0, 0, ?, ?)`)
+            id, email, plan, webLimit, apiCredits, usage, dailyUsage, credits, createdAt, magicToken, tokenExpiry
+        ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)`)
             .run(
-                userId, cleanEmail, apiKey, apiKeyHash, selectedPlan,
+                userId, cleanEmail, selectedPlan,
                 planConfig.webLimit, planConfig.apiCredits,
-                planConfig.credits || 0, new Date().toISOString()
+                planConfig.credits || 0, new Date().toISOString(),
+                magicToken, tokenExpiry
             );
 
-        // Send Welcome
-        await sendWelcomeEmail(cleanEmail, `${process.env.FRONTEND_URL}/dashboard`);
+        // Create Default API Key in new table
+        const keyId = 'key_' + crypto.randomBytes(8).toString('hex');
+        const prefix = apiKey.substring(0, 7) + '...';
+
+        db.prepare(`
+            INSERT INTO api_keys (id, userId, keyHash, name, prefix, createdAt, status)
+            VALUES (?, ?, ?, 'Default API Key', ?, ?, 'active')
+        `).run(keyId, userId, apiKeyHash, prefix, new Date().toISOString());
+
+        // Send Welcome with Magic Link (Async - don't wait)
+        // Include email in verification link
+        const magicLink = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
+
+        // Fire and forget email to speed up response
+        sendWelcomeEmail(cleanEmail, magicLink).catch(err => console.error("Async Email Error:", err));
 
         res.json({
             success: true,
@@ -130,7 +157,59 @@ exports.getProfile = (req, res) => {
 
     // Refresh from DB
     const freshUser = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+
+    // Fetch active API key prefix (Defensive)
+    try {
+        const apiKeyRecord = db.prepare("SELECT prefix FROM api_keys WHERE userId = ? AND status = 'active' LIMIT 1").get(req.user.id);
+
+        // Attach masked key for display
+        if (apiKeyRecord && apiKeyRecord.prefix) {
+            freshUser.apiKey = apiKeyRecord.prefix;
+        }
+    } catch (e) {
+        console.error("Failed to fetch API key for profile:", e);
+        // Continue without key - do not crash profile load
+    }
+
     res.json({ success: true, user: parseUser(freshUser) });
+};
+
+exports.updateProfile = (req, res) => {
+    if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+
+    const { company, address, billingEmail, vatNumber } = req.body;
+
+    try {
+        // Validate inputs (basic)
+        const updates = {
+            company: company ? sanitizeString(company) : null,
+            address: address ? sanitizeString(address) : null,
+            billingEmail: billingEmail && isValidEmail(billingEmail) ? billingEmail : null,
+            vatNumber: vatNumber ? sanitizeString(vatNumber) : null
+        };
+
+        // Create invoiceDetails JSON
+        const invoiceDetails = JSON.stringify(updates);
+
+        // Update DB
+        db.prepare(`
+            UPDATE users 
+            SET company = ?, address = ?, billingEmail = ?, vatNumber = ?, invoiceDetails = ?
+            WHERE id = ?
+        `).run(
+            updates.company,
+            updates.address,
+            updates.billingEmail,
+            updates.vatNumber,
+            invoiceDetails,
+            req.user.id
+        );
+
+        res.json({ success: true, message: 'Profile updated successfully' });
+    } catch (error) {
+        console.error("Update Profile Error:", error);
+        res.status(500).json({ success: false, error: 'Failed to update profile' });
+    }
 };
 
 exports.verifyToken = (req, res) => {
@@ -160,7 +239,7 @@ exports.verifyToken = (req, res) => {
 
     // Generate session token for cookie-based auth
     const sessionToken = crypto.randomBytes(32).toString('hex');
-    const sessionExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
     // Store session in database
     db.prepare('UPDATE users SET sessionToken = ?, sessionExpiry = ? WHERE id = ?')
@@ -170,8 +249,8 @@ exports.verifyToken = (req, res) => {
     res.cookie('shrinkix_session', sessionToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        sameSite: 'lax',
+        maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
 
     res.json({
@@ -182,30 +261,28 @@ exports.verifyToken = (req, res) => {
 };
 
 // --- Check Limit (Used by Auth Middleware) ---
+// --- Check Limit (Used by Auth Middleware) ---
 exports.checkLimit = async (providedKey) => {
-    // Get all users to check hash
-    const users = db.prepare('SELECT * FROM users').all();
+    // Get all Active keys for verification (Performance Note: in prod this should be optimized)
+    const keys = db.prepare('SELECT * FROM api_keys WHERE status = \'active\'').all();
 
-    let matchedUser = null;
+    let matchedKey = null;
 
-    // Find user by comparing hashes
-    for (const user of users) {
-        if (user.apiKeyHash) {
-            const isMatch = await bcrypt.compare(providedKey, user.apiKeyHash);
-            if (isMatch) {
-                matchedUser = user;
-                break;
-            }
-        } else if (user.apiKey === providedKey) {
-            // Fallback for users not yet migrated
-            matchedUser = user;
+    for (const key of keys) {
+        const isMatch = await bcrypt.compare(providedKey, key.keyHash);
+        if (isMatch) {
+            matchedKey = key;
             break;
         }
     }
 
-    if (!matchedUser) return { allowed: false, user: null };
+    if (!matchedKey) return { allowed: false, user: null };
 
-    const parsedUser = parseUser(matchedUser);
+    // Get user associated with key
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
+    if (!user) return { allowed: false, user: null };
+
+    const parsedUser = parseUser(user);
     const planConfig = PLANS[parsedUser.plan] || PLANS.free;
 
     let allowed = false;
@@ -223,29 +300,53 @@ exports.checkLimit = async (providedKey) => {
 };
 
 exports.incrementUsage = async (providedKey) => {
-    const users = db.prepare('SELECT * FROM users').all();
+    // We reuse logic similar to checkLimit but optimized if possible
+    // For now, iterate keys again to find match
+    const keys = db.prepare('SELECT * FROM api_keys WHERE status = \'active\'').all();
 
-    for (const user of users) {
-        let isMatch = false;
-
-        if (user.apiKeyHash) {
-            isMatch = await bcrypt.compare(providedKey, user.apiKeyHash);
-        } else if (user.apiKey === providedKey) {
-            isMatch = true;
-        }
-
-        if (isMatch) {
-            const parsedUser = parseUser(user);
-
-            if (parsedUser.usage < parsedUser.apiCredits) {
-                db.prepare('UPDATE users SET usage = usage + 1, lastUsedDate = ? WHERE id = ?')
-                    .run(new Date().toISOString(), user.id);
-            } else if (parsedUser.credits > 0) {
-                db.prepare('UPDATE users SET credits = credits - 1, lastUsedDate = ? WHERE id = ?')
-                    .run(new Date().toISOString(), user.id);
-            }
+    let matchedKey = null;
+    for (const key of keys) {
+        if (await bcrypt.compare(providedKey, key.keyHash)) {
+            matchedKey = key;
             break;
         }
+    }
+
+    if (matchedKey) {
+        // Update user stats
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
+        if (!user) return;
+
+        const parsedUser = parseUser(user);
+
+        // Update Key Last Used
+        db.prepare('UPDATE api_keys SET lastUsedAt = ? WHERE id = ?').run(new Date().toISOString(), matchedKey.id);
+
+        if (parsedUser.usage < parsedUser.apiCredits) {
+            db.prepare('UPDATE users SET usage = usage + 1, lastUsedDate = ? WHERE id = ?')
+                .run(new Date().toISOString(), matchedKey.userId);
+        } else if (parsedUser.credits > 0) {
+            db.prepare('UPDATE users SET credits = credits - 1, lastUsedDate = ? WHERE id = ?')
+                .run(new Date().toISOString(), matchedKey.userId);
+        }
+
+    }
+};
+
+exports.incrementUserWebUsage = (userId) => {
+    try {
+        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(userId);
+        if (!user) return;
+
+        const parsedUser = parseUser(user);
+
+        // Ensure webLimit rules (though normally checked before compression)
+        // Increment dailyUsage for web tracking (resets via cron job)
+        db.prepare('UPDATE users SET dailyUsage = dailyUsage + 1, lastUsedDate = ? WHERE id = ?')
+            .run(new Date().toISOString(), userId);
+
+    } catch (error) {
+        console.error("Failed to increment web usage:", error);
     }
 };
 
@@ -282,15 +383,37 @@ exports.upgradeUserPlan = (email, planName, paymentId) => {
         return null;
     }
 
+    const planConfig = PLANS[targetPlan];
+
     console.log(`Upgrading user ${email} to ${targetPlan}`);
 
     const planUpdatedAt = new Date().toISOString();
-    // Reset usage on upgrade? logic can vary.
+    // Reset usage on upgrade? logic can vary. Let's reset usage to 0 for the new plan cycle.
+    // Also update webLimit and apiCredits from the plan config.
 
-    db.prepare(`UPDATE users SET plan = ?, lastPaymentId = ?, planUpdatedAt = ? WHERE email = ?`)
-        .run(targetPlan, paymentId, planUpdatedAt, email);
+    db.prepare(`
+        UPDATE users 
+        SET plan = ?, 
+            lastPaymentId = ?, 
+            planUpdatedAt = ?,
+            webLimit = ?,
+            apiCredits = ?,
+            usage = 0 -- Reset usage on upgrade
+        WHERE email = ?
+    `).run(
+        targetPlan,
+        paymentId,
+        planUpdatedAt,
+        planConfig.webLimit || 20,
+        planConfig.apiCredits || 0,
+        email
+    );
 
     user.plan = targetPlan;
+    user.webLimit = planConfig.webLimit || 20;
+    user.apiCredits = planConfig.apiCredits || 0;
+    user.usage = 0;
+
     return user;
 };
 

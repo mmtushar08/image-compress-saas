@@ -1,6 +1,9 @@
 node_modules/
 *.log
 .env
+*.env.keys
+api/.env
+api/.env.keys
 uploads/
 output/
 debug.log

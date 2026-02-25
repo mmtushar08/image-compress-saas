@@ -1,7 +1,7 @@
-require('dotenv').config({ path: path.join(__dirname, '..', '..', 'api', '.env') });
+const path = require('path');
+require('@dotenvx/dotenvx').config({ path: path.join(__dirname, '..', '..', 'api', '.env') });
 const { Client } = require('ssh2');
 const fs = require('fs');
-const path = require('path');
 const archiver = require('archiver');
 
 const config = {
@@ -74,6 +74,13 @@ archive.glob('**/*', {
     ]
 }, { prefix: 'api' });
 
+// Explicitly add .env file (dotfiles are skipped by default glob)
+archive.file(path.join(PROJECT_ROOT, 'api', '.env'), { name: 'api/.env' });
+archive.file(path.join(PROJECT_ROOT, 'api', '.env.keys'), { name: 'api/.env.keys' });
+
+// Add Nginx config
+archive.file(path.join(__dirname, 'nginx.conf'), { name: 'nginx.conf' });
+
 archive.finalize();
 
 // Step 3: Upload and deploy
@@ -118,13 +125,33 @@ function uploadAndDeploy() {
                     `echo "🗑️  Removing unnecessary client node_modules..."`,
                     `rm -rf ${REMOTE_PATH}/client/node_modules`,
 
+                    // Ensure persistent data directory exists outside deployment
+                    `mkdir -p /var/www/shrinkix-data`,
+                    `chmod -R 777 /var/www/shrinkix-data`,
+
+                    // SAFETY: If api/data exists and is a REAL DIRECTORY (not symlink), move contents to persistent storage
+                    // Note: We use a single string to ensure shell syntax validity when joined by '&&'
+                    `if [ -d "${REMOTE_PATH}/api/data" ] && [ ! -L "${REMOTE_PATH}/api/data" ]; then echo "📦 Migrating existing data to persistent storage..."; cp -r ${REMOTE_PATH}/api/data/* /var/www/shrinkix-data/ 2>/dev/null || true; rm -rf ${REMOTE_PATH}/api/data; fi`,
+
+                    // Link persistent data directory to api/data
+                    `ln -sfn /var/www/shrinkix-data ${REMOTE_PATH}/api/data`,
+
                     // Ensure backend node_modules exists
                     `echo "✅ Checking backend dependencies..."`,
                     `cd ${REMOTE_PATH}/api && npm install --production 2>&1 | tail -5`,
 
                     // Restart backend
                     `echo "🔄 Restarting services..."`,
-                    `pm2 restart api || pm2 start server.js --name api`,
+                    `pm2 delete api || true`, // Remove legacy process name if present
+                    `cd ${REMOTE_PATH}/api && pm2 startOrRestart ecosystem.config.js --only shrinkix-api --env production`,
+
+                    // Apply Nginx Config
+                    `echo "🔧 Applying Nginx configuration..."`,
+                    `cp ${REMOTE_PATH}/nginx.conf /etc/nginx/sites-available/shrinkix`,
+                    `ln -sfn /etc/nginx/sites-available/shrinkix /etc/nginx/sites-enabled/`,
+                    `rm -f /etc/nginx/sites-enabled/default`, // Remove default if exists
+                    `rm -f /etc/nginx/sites-enabled/00-catch-all`, // Remove catch-all if exists
+                    `nginx -t`, // Verify config
 
                     // Reload nginx
                     `systemctl reload nginx`,

@@ -1,33 +1,36 @@
 const userController = require('./userController');
 
-// Initialize Stripe safely
-let stripe;
-if (process.env.STRIPE_SECRET_KEY) {
-    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-} else {
-    console.warn("⚠️ STRIPE_SECRET_KEY missing. Webhooks disabled.");
-}
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder');
 
 exports.handleWebhook = async (req, res) => {
-    let event = req.body;
-
-    const signature = req.headers['stripe-signature'];
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const signature = req.headers['stripe-signature'];
 
-    // Secure Verification (Requires Raw Body)
-    if (webhookSecret && signature) {
-        try {
-            if (!req.rawBody) {
-                console.error("❌ req.rawBody is missing! Ensure server.js preserves raw body for webhooks.");
-                return res.status(400).send('Webhook Error: Raw body missing');
-            }
-            event = stripe.webhooks.constructEvent(req.rawBody, signature, webhookSecret);
-        } catch (err) {
-            console.error(`⚠️  Webhook signature verification failed.`, err.message);
-            return res.status(400).send(`Webhook Error: ${err.message}`);
-        }
-    } else {
-        // console.log('⚠️  Skipping signature verification (STRIPE_WEBHOOK_SECRET not set)');
+    if (!process.env.STRIPE_SECRET_KEY || !webhookSecret) {
+        return res.status(503).json({
+            success: false,
+            error: 'Webhook is not configured on this server'
+        });
+    }
+
+    if (!signature) {
+        return res.status(400).json({
+            success: false,
+            error: 'Missing Stripe signature header'
+        });
+    }
+
+    if (!req.rawBody) {
+        console.error("❌ req.rawBody is missing! Ensure server.js preserves raw body for webhooks.");
+        return res.status(400).send('Webhook Error: Raw body missing');
+    }
+
+    let event;
+    try {
+        event = stripe.webhooks.constructEvent(req.rawBody, signature, webhookSecret);
+    } catch (err) {
+        console.error('⚠️ Webhook signature verification failed.', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
     // Handle Events
