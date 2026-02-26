@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import HeroSection from './home/HeroSection';
 import NewHeroSection from './home/NewHeroSection';
 import TrustSignal from './home/TrustSignal';
 import Problem from './home/Problem';
@@ -58,7 +59,8 @@ export default function Home() {
     return (
         <main id="upload">
             {/* Hero Section with Upload */}
-            <NewHeroSection>
+            {/* Hero Section with Upload */}
+            <HeroSection>
                 <UploadZone
                     onFilesSelected={handleFiles}
                     limitInfo={limitInfo}
@@ -66,7 +68,14 @@ export default function Home() {
                     setTargetFormats={setTargetFormats}
                     formatWarnings={formatWarnings}
                 />
-            </NewHeroSection>
+            </HeroSection>
+
+            {/* Download All Button */}
+            <DownloadAllButton
+                showDownloadAll={showDownloadAll}
+                onDownloadAll={handleDownloadAll}
+                isProcessing={isProcessing}
+            />
 
             {/* Results List */}
             <ResultsList
@@ -79,6 +88,10 @@ export default function Home() {
                 onDownloadAll={handleDownloadAll}
                 isProcessing={isProcessing}
             />
+
+            <NewHeroSection />
+
+
 
             {/* Trust Signal */}
             <TrustSignal />
