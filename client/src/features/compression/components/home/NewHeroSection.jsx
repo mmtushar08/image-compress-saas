@@ -4,7 +4,7 @@ export default function NewHeroSection({ children }) {
             <div className="new-hero-content">
                 <h1>Convert and compress images automatically</h1>
                 <p className="sub-headline">
-                    Shrinkix optimizes your images the moment they're uploaded — smaller files, faster websites, and no manual work.
+                    Shrinkix optimizes your images the moment they are uploaded - smaller files, faster websites, and no manual work.
                 </p>
                 <p className="supporting-line">
                     Built for developers, designers, and teams who care about performance, privacy, and speed.
@@ -22,3 +22,4 @@ export default function NewHeroSection({ children }) {
         </section>
     );
 }
+
