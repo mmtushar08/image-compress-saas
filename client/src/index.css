@@ -8,6 +8,44 @@
   --border-color: #e3e8ee;
   --success: #48c774;
   --error: #f14668;
+  --primary-color: #3c78d8;
+}
+
+/* Spinner for Suspense fallback */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* CLS prevention: reserve minimum height for sections that render async */
+.hero {
+  min-height: 420px;
+  contain: layout style;
+}
+
+.features-section,
+.how-it-works-section,
+.faq-section,
+.pricing-section {
+  contain: layout;
+}
+
+/* Reduce layout shift on image load */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Improve INP: reduce paint complexity on animated elements */
+.upload-zone {
+  will-change: transform;
+  contain: layout style;
+}
+
+.feature-card,
+.persona-card,
+.step-card {
+  contain: layout style;
 }
 
 * {
