@@ -1,4 +1,6 @@
 import { useNavigate } from 'react-router-dom';
+import { SEOHead, JsonLd } from '../../../components/SEOHead';
+import { pricingWebSchema } from '../../../seo/schemas';
 import PricingHero from './pricing/PricingHero';
 import PricingCard from './pricing/PricingCard';
 import FaasLink from './pricing/FaasLink';
@@ -57,6 +59,12 @@ export default function Pricing() {
 
     return (
         <section className="pricing-section">
+            <SEOHead
+                title="Pricing Plans"
+                description="Choose a free or paid Shrinkix plan. Unlimited images, priority support, and large file limits from $39/year. Start free — no credit card required."
+                canonical="/pricing"
+            />
+            <JsonLd schema={pricingWebSchema} />
             <PricingHero />
 
             <div className="pricing-cards" style={{ maxWidth: '1000px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>

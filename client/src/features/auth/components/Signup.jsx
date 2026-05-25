@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Mail, ArrowRight, ShieldCheck } from 'lucide-react';
+import { SEOHead } from '../../../components/SEOHead';
 import '../../../styles/dashboard.css';
 
 export default function Signup() {
@@ -82,6 +83,11 @@ export default function Signup() {
 
     return (
         <div className="auth-container">
+            <SEOHead
+                title={isLogin ? 'Sign In to Your Account' : 'Create a Free Account'}
+                description={isLogin ? 'Sign in to your Shrinkix account to access your dashboard and API key.' : 'Sign up for Shrinkix and start compressing images instantly. Free plan includes 500 API credits per month.'}
+                canonical={isLogin ? '/login' : '/signup'}
+            />
             <div className="auth-card">
                 <div className="auth-header">
                     <div className="auth-icon-circle">

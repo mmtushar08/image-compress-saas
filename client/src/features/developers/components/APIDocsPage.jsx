@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, JsonLd } from '../../../components/SEOHead';
+import { techArticleSchema, breadcrumbSchema } from '../../../seo/schemas';
 import '../../../styles/api-docs.css';
 
 export default function APIDocsPage() {
@@ -18,6 +20,17 @@ export default function APIDocsPage() {
 
     return (
         <div className="api-docs-page">
+            <SEOHead
+                title="API Reference Documentation"
+                description="Complete reference for the Shrinkix Image Compression API. Endpoints, authentication, request parameters, SDKs, and code examples in Node.js, Python, PHP, Ruby, Go, Java, and C#."
+                canonical="/api-docs"
+            />
+            <JsonLd schema={techArticleSchema} />
+            <JsonLd schema={breadcrumbSchema([
+                { name: 'Home', path: '/' },
+                { name: 'Developers', path: '/developers' },
+                { name: 'API Reference', path: '/api-docs' }
+            ])} />
             <nav className="api-docs-nav">
                 <div className="api-docs-nav-header">
                     <h3>API Reference</h3>

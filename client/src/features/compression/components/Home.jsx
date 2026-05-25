@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { SEOHead, JsonLd } from '../../../components/SEOHead';
+import { softwareAppSchema, howToSchema, faqHomeSchema, speakableHomeSchema } from '../../../seo/schemas';
 import HeroSection from './home/HeroSection';
 import NewHeroSection from './home/NewHeroSection';
 import TrustSignal from './home/TrustSignal';
@@ -58,6 +60,15 @@ export default function Home() {
 
     return (
         <main id="upload">
+            <SEOHead
+                title="Compress &amp; Convert Images Free"
+                description="Instantly compress PNG, JPG, WebP, and AVIF images online. Free, fast, and private — files deleted after processing. No account required."
+                canonical="/"
+            />
+            <JsonLd schema={softwareAppSchema} />
+            <JsonLd schema={howToSchema} />
+            <JsonLd schema={faqHomeSchema} />
+            <JsonLd schema={speakableHomeSchema} />
             {/* Hero Section with Upload */}
             {/* Hero Section with Upload */}
             <HeroSection>

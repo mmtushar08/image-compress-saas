@@ -627,6 +627,24 @@ input:disabled+.slider-round {
   border-top: 1px solid var(--border-color);
 }
 
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.footer-links a {
+  color: var(--text-light);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.footer-links a:hover {
+  color: var(--primary-color);
+}
+
 /* Pricing Section */
 .pricing-section {
   padding: 4rem 1rem;

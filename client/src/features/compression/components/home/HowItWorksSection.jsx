@@ -20,7 +20,7 @@ export default function HowItWorksSection() {
     return (
         <section className="how-it-works-section">
             <div className="section-container">
-                <h2>Upload once. Shrinkix does the rest.</h2>
+                <h2>How to compress images for a website</h2>
                 <div className="steps-grid">
                     {steps.map((step) => (
                         <div key={step.number} className="step-card">

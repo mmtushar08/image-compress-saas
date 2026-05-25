@@ -5,7 +5,7 @@ export default function DeveloperFAQ() {
                 <h2>Frequently Asked Questions</h2>
                 <div className="faq-grid">
                     <div className="faq-item">
-                        <h4>01. How can I sign up for an API account?</h4>
+                        <h3>01. How can I sign up for an API account?</h3>
                         <p>
                             You can sign up for the developer API by entering your name and email address above.
                             After registration, an activation email will be sent to your email address. By clicking
@@ -14,7 +14,7 @@ export default function DeveloperFAQ() {
                     </div>
 
                     <div className="faq-item">
-                        <h4>02. Is there a maximum file size limit?</h4>
+                        <h3>02. Is there a maximum file size limit?</h3>
                         <p>
                             To ensure optimal service quality, the API imposes certain limitations. The maximum file
                             size permitted is 100MB for Enterprise plans, and images should not surpass a maximum
@@ -23,7 +23,7 @@ export default function DeveloperFAQ() {
                     </div>
 
                     <div className="faq-item">
-                        <h4>03. Can I use one API account for multiple websites?</h4>
+                        <h3>03. Can I use one API account for multiple websites?</h3>
                         <p>
                             In the API dashboard, you can easily create new API keys. We recommend using different
                             API keys for different implementations so that you can monitor the number of compressions separately.
@@ -31,7 +31,7 @@ export default function DeveloperFAQ() {
                     </div>
 
                     <div className="faq-item">
-                        <h4>04. Can Shrinkix see what images I have uploaded?</h4>
+                        <h3>04. Can Shrinkix see what images I have uploaded?</h3>
                         <p>
                             At Shrinkix, we take your privacy seriously, so we can't see the content of your images.
                             Only a minimum of personal information is collected and used to administer your account

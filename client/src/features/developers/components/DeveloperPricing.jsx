@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SEOHead, JsonLd } from '../../../components/SEOHead';
+import { pricingApiSchema, faqDeveloperPricingSchema, breadcrumbSchema } from '../../../seo/schemas';
 import '../../../styles/Developers.css';
 
 const DeveloperPricing = () => {
@@ -14,6 +16,18 @@ const DeveloperPricing = () => {
 
     return (
         <div className="developers-page pricing-page">
+            <SEOHead
+                title="API Pricing — Image Compression API"
+                description="Shrinkix API pricing: Free (500 credits/month), Pro (5,000/month for $35), Ultra (15,000/month for $90). No hidden fees. Start free, no credit card required."
+                canonical="/developers/pricing"
+            />
+            <JsonLd schema={pricingApiSchema} />
+            <JsonLd schema={faqDeveloperPricingSchema} />
+            <JsonLd schema={breadcrumbSchema([
+                { name: 'Home', path: '/' },
+                { name: 'Developers', path: '/developers' },
+                { name: 'API Pricing', path: '/developers/pricing' }
+            ])} />
             {/* Hero Section */}
             <section className="dev-hero">
                 <div className="dev-container">
@@ -286,7 +300,7 @@ const DeveloperPricing = () => {
                             <h4>02. How does the Developer API pricing work?</h4>
                             <p>
                                 Every account starts with 500 free API credits each month. If you need more, you can
-                                subscribe to API Pro (5,000 credits/month for $19) or API Ultra (20,000 credits/month for $49).
+                                subscribe to API Pro (5,000 credits/month for $35) or API Ultra (15,000 credits/month for $90).
                                 Your monthly credit allowance resets at the start of each calendar month. You can also purchase
                                 additional credit bundles anytime, which never expire and are consumed after your monthly allowance.
                             </p>
