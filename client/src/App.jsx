@@ -24,6 +24,12 @@ const HowItWorks = lazy(() => import('./features/developers/components/developer
 const About = lazy(() => import('./features/about/About'));
 const Privacy = lazy(() => import('./features/privacy/Privacy'));
 const NotFound = lazy(() => import('./features/notfound/NotFound'));
+const CompressJpeg = lazy(() => import('./features/formats/components/CompressJpeg'));
+const CompressPng = lazy(() => import('./features/formats/components/CompressPng'));
+const CompressWebp = lazy(() => import('./features/formats/components/CompressWebp'));
+const CompressAvif = lazy(() => import('./features/formats/components/CompressAvif'));
+const ConvertToWebp = lazy(() => import('./features/formats/components/ConvertToWebp'));
+const CompressImageToKb = lazy(() => import('./features/formats/components/CompressImageToKb'));
 
 function PageLoader() {
   return (
@@ -59,6 +65,12 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/checkout/:type" element={<Checkout />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/compress-jpeg" element={<CompressJpeg />} />
+          <Route path="/compress-png" element={<CompressPng />} />
+          <Route path="/compress-webp" element={<CompressWebp />} />
+          <Route path="/compress-avif" element={<CompressAvif />} />
+          <Route path="/convert-to-webp" element={<ConvertToWebp />} />
+          <Route path="/compress-image-to-kb" element={<CompressImageToKb />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
