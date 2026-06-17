@@ -3,10 +3,12 @@ import { Helmet } from 'react-helmet-async';
 const SITE_URL = 'https://shrinkix.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
-export function SEOHead({ title, description, canonical, ogImage, ogType = 'website' }) {
-    const fullTitle = title
-        ? `${title} | Shrinkix`
-        : 'Compress & Convert Images Free — Shrinkix';
+export function SEOHead({ title, rawTitle, description, canonical, ogImage, ogType = 'website' }) {
+    const fullTitle = rawTitle
+        ? rawTitle
+        : title
+            ? `${title} | Shrinkix`
+            : 'Compress & Convert Images Free — Shrinkix';
     const metaDesc = description || 'Instantly compress PNG, JPG, WebP, and AVIF images online. Free, fast, and private — files deleted after processing. No account required.';
     const canonicalUrl = canonical ? `${SITE_URL}${canonical}` : SITE_URL;
     const image = ogImage || DEFAULT_OG_IMAGE;

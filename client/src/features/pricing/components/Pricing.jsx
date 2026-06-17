@@ -60,9 +60,10 @@ export default function Pricing() {
     return (
         <section className="pricing-section">
             <SEOHead
-                title="Pricing Plans"
-                description="Choose a free or paid Shrinkix plan. Unlimited images, priority support, and large file limits from $39/year. Start free — no credit card required."
+                rawTitle="Shrinkix Pricing — Free Plan + API Plans That Scale"
+                description="Start free, upgrade when you need more. Shrinkix offers unlimited web compression, developer API access, and WordPress plugin support."
                 canonical="/pricing"
+                ogImage="https://shrinkix.com/og/pricing.png"
             />
             <JsonLd schema={pricingWebSchema} />
             <PricingHero />

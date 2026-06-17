@@ -12,9 +12,10 @@ const Developers = () => {
     return (
         <div className="developers-page">
             <SEOHead
-                title="Image Compression API for Developers"
-                description="Automate image optimization with the Shrinkix REST API. Compress PNG, JPEG, WebP, and AVIF at scale. SDKs for Node.js, Python, PHP, Ruby, Go, and more. Free plan available."
+                rawTitle="Image Compression API for Developers — Shrinkix"
+                description="Automate image optimization with the Shrinkix REST API. SDKs for Node.js, Python, PHP, Ruby, Go. Free plan. No credit card."
                 canonical="/developers"
+                ogImage="https://shrinkix.com/og/api.png"
             />
             <JsonLd schema={faqDevelopersSchema} />
             <JsonLd schema={breadcrumbSchema([

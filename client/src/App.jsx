@@ -30,6 +30,9 @@ const CompressWebp = lazy(() => import('./features/formats/components/CompressWe
 const CompressAvif = lazy(() => import('./features/formats/components/CompressAvif'));
 const ConvertToWebp = lazy(() => import('./features/formats/components/ConvertToWebp'));
 const CompressImageToKb = lazy(() => import('./features/formats/components/CompressImageToKb'));
+const Compress = lazy(() => import('./features/compress/components/Compress'));
+const Convert = lazy(() => import('./features/convert/components/Convert'));
+const WordPressPlugin = lazy(() => import('./features/wordpress/components/WordPress'));
 
 function PageLoader() {
   return (
@@ -71,6 +74,9 @@ function App() {
           <Route path="/compress-avif" element={<CompressAvif />} />
           <Route path="/convert-to-webp" element={<ConvertToWebp />} />
           <Route path="/compress-image-to-kb" element={<CompressImageToKb />} />
+          <Route path="/compress" element={<Compress />} />
+          <Route path="/convert" element={<Convert />} />
+          <Route path="/wordpress" element={<WordPressPlugin />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>

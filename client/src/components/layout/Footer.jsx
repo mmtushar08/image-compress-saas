@@ -7,6 +7,9 @@ export default function Footer() {
                 <div className="footer-col">
                     <span className="footer-col-heading">Product</span>
                     <Link to="/">Home</Link>
+                    <Link to="/compress">Compress Images</Link>
+                    <Link to="/convert">Convert Images</Link>
+                    <Link to="/wordpress">WordPress Plugin</Link>
                     <Link to="/pricing">Pricing</Link>
                     <Link to="/about">About</Link>
                     <Link to="/signup">Sign Up</Link>

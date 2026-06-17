@@ -61,9 +61,10 @@ export default function Home() {
     return (
         <main id="upload">
             <SEOHead
-                title="Compress &amp; Convert Images Free"
-                description="Instantly compress PNG, JPG, WebP, and AVIF images online. Free, fast, and private — files deleted after processing. No account required."
+                rawTitle="Shrinkix — Automatic Image Compression & WebP/AVIF Converter"
+                description="Compress and convert PNG, JPG, WebP & AVIF automatically. Free forever. No sign-up. Files deleted instantly after processing."
                 canonical="/"
+                ogImage="https://shrinkix.com/og/home.png"
             />
             <JsonLd schema={softwareAppSchema} />
             <JsonLd schema={howToSchema} />
