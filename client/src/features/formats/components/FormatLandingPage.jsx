@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { SEOHead, JsonLd } from '../../../components/SEOHead';
-import HeroSection from '../../compression/components/home/HeroSection';
 import UploadZone from '../../compression/components/home/UploadZone';
 import DownloadAllButton from '../../compression/components/home/DownloadAllButton';
 import ResultsList from '../../compression/components/home/ResultsList';
@@ -59,20 +58,22 @@ export default function FormatLandingPage({ config }) {
             <JsonLd schema={faqSchema} />
             <JsonLd schema={breadcrumbSchema} />
 
-            {/* Hero with embedded tool */}
-            <HeroSection>
-                <div className="format-hero-content">
-                    <h1 className="format-h1">{config.heading}</h1>
-                    <p className="format-subheading">{config.subheading}</p>
+            {/* Hero with embedded tool — uses gradient, not image-based HeroSection */}
+            <section className="format-landing-hero">
+                <div className="container">
+                    <div className="format-hero-content">
+                        <h1 className="format-h1">{config.heading}</h1>
+                        <p className="format-subheading">{config.subheading}</p>
+                    </div>
+                    <UploadZone
+                        onFilesSelected={handleFiles}
+                        limitInfo={limitInfo}
+                        targetFormats={targetFormats}
+                        setTargetFormats={setTargetFormats}
+                        formatWarnings={formatWarnings}
+                    />
                 </div>
-                <UploadZone
-                    onFilesSelected={handleFiles}
-                    limitInfo={limitInfo}
-                    targetFormats={targetFormats}
-                    setTargetFormats={setTargetFormats}
-                    formatWarnings={formatWarnings}
-                />
-            </HeroSection>
+            </section>
 
             <DownloadAllButton showDownloadAll={showDownloadAll} onDownloadAll={handleDownloadAll} isProcessing={isProcessing} />
             <ResultsList items={items} formatFileSize={formatFileSize} />
