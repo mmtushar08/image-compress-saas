@@ -2220,31 +2220,6 @@ input:disabled+.slider-round {
 /* ============================================================
    FORMAT LANDING PAGES
    ============================================================ */
-/* Format landing page hero — gradient-based, no background image dependency */
-.format-landing-hero {
-  background: var(--gradient-hero);
-  padding: 5rem 1rem 4rem;
-  position: relative;
-  overflow: hidden;
-  min-height: 480px;
-  display: flex;
-  align-items: center;
-}
-
-.format-landing-hero::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: url('data:image/svg+xml,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="g" width="100" height="100" patternUnits="userSpaceOnUse"><path d="M 100 0 L 0 0 0 100" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="1"/></pattern></defs><rect width="100%25" height="100%25" fill="url(%23g)"/></svg>');
-}
-
-.format-landing-hero .container {
-  position: relative;
-  z-index: 2;
-  width: 100%;
-  max-width: 720px;
-  margin: 0 auto;
-}
 
 .format-hero-content {
   text-align: center;
