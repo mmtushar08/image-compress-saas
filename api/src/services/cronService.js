@@ -1,45 +1,49 @@
-const cron = require('node-cron');
-const db = require('./db');
+const cron   = require('node-cron');
+const db     = require('./db');
+const logger = require('../utils/logger');
 
 const initCron = () => {
-    console.log('⏰ Initializing Cron Jobs...');
+    logger.info('Initializing cron jobs');
 
-    // Run at Midnight UTC every day (0 0 * * *)
+    // Daily reset — midnight UTC
     cron.schedule('0 0 * * *', () => {
-        console.log('🔄 Running Nightly Reset Job...');
-
+        logger.info('Running nightly reset job');
         try {
-            // Reset dailyUsage for ALL users
-            // Note: We reset for everyone to be safe, or we could filter by plan.
-            // Since dailyUsage is only relevant for limiting, resetting it for everyone is fine.
-            // It also resets guest limits which are in-memory (handled separately in userController), 
-            // but this DB reset handles registered users.
-
             const info = db.prepare('UPDATE users SET dailyUsage = 0').run();
-
-            console.log(`✅ Daily usage reset complete. Updated ${info.changes} users.`);
-
+            // Also purge expired guest_limits rows older than today
+            const today = new Date().toISOString().split('T')[0];
+            db.prepare("DELETE FROM guest_limits WHERE date < ?").run(today);
+            logger.info('Nightly reset complete', { usersReset: info.changes });
         } catch (error) {
-            console.error('❌ Nightly Reset Job Failed:', error);
+            logger.error('Nightly reset job failed', { error: error.message, stack: error.stack });
         }
-    }, {
-        timezone: "Etc/UTC"
-    });
+    }, { timezone: 'Etc/UTC' });
 
-    // Run at Start of Month (0 0 1 * *)
+    // Monthly reset — 1st of month, midnight UTC
     cron.schedule('0 0 1 * *', () => {
-        console.log('📅 Running Monthly Usage Reset Job...');
+        logger.info('Running monthly usage reset job');
         try {
             const info = db.prepare('UPDATE users SET usage = 0').run();
-            console.log(`✅ Monthly usage reset complete. Updated ${info.changes} users.`);
+            logger.info('Monthly reset complete', { usersReset: info.changes });
         } catch (error) {
-            console.error('❌ Monthly Reset Job Failed:', error);
+            logger.error('Monthly reset job failed', { error: error.message, stack: error.stack });
         }
-    }, {
-        timezone: "Etc/UTC"
+    }, { timezone: 'Etc/UTC' });
+
+    // Purge expired download tokens — every hour
+    cron.schedule('0 * * * *', () => {
+        try {
+            const info = db.prepare("DELETE FROM download_tokens WHERE expiresAt < ? OR used = 1")
+                .run(new Date().toISOString());
+            if (info.changes > 0) {
+                logger.debug('Purged expired download tokens', { count: info.changes });
+            }
+        } catch (error) {
+            logger.error('Download token purge failed', { error: error.message });
+        }
     });
 
-    console.log('✅ Cron Jobs Scheduled (Midnight UTC)');
+    logger.info('Cron jobs scheduled');
 };
 
 module.exports = initCron;

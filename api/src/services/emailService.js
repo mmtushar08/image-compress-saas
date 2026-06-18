@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer');
 const process = require('process');
+const logger = require('../utils/logger');
 
 // Config
 const SMTP_HOST = process.env.SMTP_HOST || 'smtp.ethereal.email';
@@ -29,19 +30,14 @@ if (process.env.SMTP_HOST) {
     // Fallback for development if no env vars set
     // We will just create a "JSON transport" or Ethereal test account if needed
     // But for "like that" visuals, we might want to actually GENERATE the html to see it.
-    console.log("⚠️ No SMTP config found. Emails will be mocked/logged.");
+    logger.warn('No SMTP config found — emails will be mocked/logged');
     transporter = {
         sendMail: async (mailOptions) => {
-            console.log("--- MOCK EMAIL SEND ---");
-            console.log("To:", mailOptions.to);
-            console.log("Subject:", mailOptions.subject);
-            if (mailOptions.text) {
-                console.log("--- EMAIL BODY (TEXT) ---");
-                console.log(mailOptions.text);
-                console.log("-------------------------");
-            }
-            console.log("HTML Preview (snippet):", mailOptions.html.substring(0, 100) + "...");
-            // return success
+            logger.info('MOCK EMAIL', {
+                to: mailOptions.to,
+                subject: mailOptions.subject,
+                text: mailOptions.text || mailOptions.html?.substring(0, 120)
+            });
             return { messageId: 'mock-id' };
         }
     };
@@ -123,10 +119,10 @@ exports.sendWelcomeEmail = async (email, dashboardLink, name = 'there') => {
             html: html,
             text: `Here is the link to your dashboard: ${link}` // Fallback
         });
-        console.log(`📧 Welcome email sent to ${email}`);
+        logger.info('Welcome email sent', { email });
         return true;
     } catch (error) {
-        console.error('❌ Failed to send welcome email:', error);
+        logger.error('Failed to send welcome email', { email, error: error.message });
         return false;
     }
 };
@@ -148,7 +144,7 @@ exports.sendMagicLink = async (email, magicLink, name = 'there') => {
         });
         return true;
     } catch (error) {
-        console.error('❌ Failed to send magic link email:', error);
+        logger.error('Failed to send magic link email', { email, error: error.message });
         return false;
     }
 };
@@ -178,7 +174,7 @@ exports.sendAdminNewUserNotification = async (userEmail, userName, plan) => {
             text: `New signup — Name: ${userName || '—'}, Email: ${userEmail}, Plan: ${plan}`
         });
     } catch (error) {
-        console.error('❌ Failed to send admin notification:', error);
+        logger.error('Failed to send admin notification', { error: error.message });
     }
 };
 
@@ -198,10 +194,10 @@ exports.sendLimitReachedEmail = async (email, plan) => {
             subject: 'Usage Limit Reached - Shrinkix',
             html: html
         });
-        console.log(`📧 Limit reached email sent to ${email}`);
+        logger.info('Limit reached email sent', { email });
         return true;
     } catch (error) {
-        console.error('❌ Failed to send limit reached email:', error);
+        logger.error('Failed to send limit reached email', { email, error: error.message });
         return false;
     }
 };

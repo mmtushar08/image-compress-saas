@@ -2,6 +2,10 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
 
+// Use a simple console wrapper here because logger.js imports db.js —
+// importing logger in db.js would create a circular dependency.
+const log = { info: (...a) => console.log('[db]', ...a), error: (...a) => console.error('[db]', ...a) };
+
 // Database File Path
 const DB_PATH = path.join(__dirname, '../data/users.db');
 const JSON_DB_PATH = path.join(__dirname, '../data/users.json');
@@ -20,11 +24,11 @@ const addColumn = (table, column, type) => {
         const info = db.prepare(`PRAGMA table_info(${table})`).all();
         const exists = info.some(col => col.name === column);
         if (!exists) {
-            console.log(`Adding missing column ${column} to ${table}...`);
+            log.info(`Adding missing column ${column} to ${table}`);
             db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`).run();
         }
     } catch (e) {
-        console.error(`Failed to add column ${column} to ${table}:`, e);
+        log.error(`Failed to add column ${column} to ${table}: ${e.message}`);
     }
 };
 
@@ -128,13 +132,13 @@ try {
         db.prepare('UPDATE api_keys SET fullKey = NULL WHERE fullKey IS NOT NULL').run();
     }
 } catch (e) {
-    console.error('Failed to scrub plaintext API keys:', e);
+    log.error(`Failed to scrub plaintext API keys: ${e.message}`);
 }
 
 // Migration: Move existing user keys to api_keys table
 const keyCount = db.prepare('SELECT count(*) as count FROM api_keys').get().count;
 if (keyCount === 0) {
-    console.log("Migrating existing API keys to api_keys table...");
+    log.info('Migrating existing API keys to api_keys table');
     const usersWithKeys = db.prepare('SELECT id, apiKey, apiKeyHash, createdAt, lastUsedDate FROM users WHERE apiKey IS NOT NULL OR apiKeyHash IS NOT NULL').all();
 
     const insertKey = db.prepare(`
@@ -188,7 +192,7 @@ if (keyCount === 0) {
     });
 
     migration(usersWithKeys);
-    console.log(`Migrated keys for ${usersWithKeys.length} users.`);
+    log.info(`Migrated keys for ${usersWithKeys.length} users`);
 }
 
 
@@ -196,7 +200,7 @@ if (keyCount === 0) {
 const userCount = db.prepare('SELECT count(*) as count FROM users').get().count;
 
 if (userCount === 0 && fs.existsSync(JSON_DB_PATH)) {
-    console.log("Migrating users from JSON to SQLite...");
+    log.info('Migrating users from JSON to SQLite');
     try {
         const raw = fs.readFileSync(JSON_DB_PATH, 'utf8');
         const users = JSON.parse(raw);
@@ -241,7 +245,7 @@ if (userCount === 0 && fs.existsSync(JSON_DB_PATH)) {
         });
 
         insertMany(users);
-        console.log(`Successfully migrated ${users.length} users.`);
+        log.info(`Successfully migrated ${users.length} users`);
     } catch (e) {
         console.error("Migration failed:", e);
     }

@@ -7,6 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 require("dotenv").config();
 const path = require("path");
 const fs = require("fs");
+const logger = require("./utils/logger");
 const authMiddleware = require("./middleware/auth");
 const compressRoutes = require("./routes/compress");
 
@@ -188,7 +189,7 @@ function validateEnv() {
 
   const missing = required.filter(key => !process.env[key]);
   if (missing.length > 0) {
-    console.warn(`⚠️  Missing optional environment variables: ${missing.join(', ')}`);
+    logger.warn('Missing optional environment variables', { missing });
   }
 
   // Set defaults
@@ -215,17 +216,10 @@ app.use((err, req, res, next) => {
   }
 
   // Log error (sanitized in production)
-  if (isDevelopment) {
-    console.error("Unhandled error:", err);
-  } else {
-    console.error("Unhandled error:", err.message);
-  }
-
-  // DEBUG: Write to file
-  try {
-    const fs = require('fs');
-    fs.appendFileSync(path.join(__dirname, 'error.log'), `${new Date().toISOString()} - ${err.stack || err}\n`);
-  } catch (e) { console.error("Logging failed", e); }
+  logger.error('Unhandled error', {
+    message: err.message,
+    ...(isDevelopment && { stack: err.stack })
+  });
 
   if (res.headersSent) {
     return next(err);
@@ -245,11 +239,11 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`✅ API running on http://localhost:${PORT}`);
+  logger.info(`API running on http://localhost:${PORT}`);
 
   // Safety Net: Cleanup old files every 1 hour
   setInterval(() => {
-    console.log("🧹 Running scheduled cleanup...");
+    logger.debug('Running scheduled file cleanup');
     const dirs = [
       path.join(__dirname, "../uploads"),
       path.join(__dirname, "../output")
@@ -258,20 +252,19 @@ app.listen(PORT, '0.0.0.0', () => {
     dirs.forEach(dir => {
       if (!fs.existsSync(dir)) return;
       fs.readdir(dir, (err, files) => {
-        if (err) return console.error(`Failed to read ${dir}:`, err);
+        if (err) { logger.error('Failed to read dir for cleanup', { dir, error: err.message }); return; }
 
         const now = Date.now();
         files.forEach(file => {
           const filePath = path.join(dir, file);
           fs.stat(filePath, (err, stats) => {
             if (err) return;
-            // Delete files older than 30 minutes
             if (now - stats.mtimeMs > 30 * 60 * 1000) {
-              fs.unlink(filePath, () => console.log(`Deleted stale file: ${file}`));
+              fs.unlink(filePath, () => logger.debug('Deleted stale file', { file }));
             }
           });
         });
       });
     });
-  }, 60 * 60 * 1000); // 1 hour
+  }, 60 * 60 * 1000);
 });

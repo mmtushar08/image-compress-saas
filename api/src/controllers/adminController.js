@@ -1,4 +1,5 @@
-const db = require('../services/db');
+const db     = require('../services/db');
+const logger = require('../utils/logger');
 const { PLANS } = require('./userController');
 
 /**
@@ -46,7 +47,7 @@ exports.getStats = (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Admin getStats error:', error);
+        logger.error('Admin getStats error', { error: error.message });
         res.status(500).json({ error: 'Failed to fetch statistics' });
     }
 };
@@ -115,7 +116,7 @@ exports.getAllUsers = (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Admin getAllUsers error:', error);
+        logger.error('Admin getAllUsers error', { error: error.message });
         res.status(500).json({ error: 'Failed to fetch users' });
     }
 };
@@ -147,7 +148,7 @@ exports.getUserDetails = (req, res) => {
             user: parsedUser
         });
     } catch (error) {
-        console.error('Admin getUserDetails error:', error);
+        logger.error('Admin getUserDetails error', { error: error.message });
         res.status(500).json({ error: 'Failed to fetch user details' });
     }
 };
@@ -198,7 +199,7 @@ exports.updateUserPlan = (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Admin updateUserPlan error:', error);
+        logger.error('Admin updateUserPlan error', { error: error.message });
         res.status(500).json({ error: 'Failed to update user plan' });
     }
 };

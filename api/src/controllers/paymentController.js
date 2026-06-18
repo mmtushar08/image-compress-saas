@@ -4,6 +4,7 @@ if (process.env.STRIPE_SECRET_KEY && !process.env.STRIPE_SECRET_KEY.startsWith('
     stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 }
 const { PLANS } = require('./userController');
+const logger = require('../utils/logger');
 
 exports.createPaymentIntent = async (req, res) => {
     try {
@@ -32,7 +33,7 @@ exports.createPaymentIntent = async (req, res) => {
 
             // DUMMY PAYMENT MODE FOR LOCAL TESTING
             if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_test_dummy')) {
-                console.log("⚠️ Using Dummy Payment Mode for Credits");
+                logger.warn('Using dummy payment mode for credits');
                 return res.json({
                     clientSecret: 'mock_secret_for_testing_credits'
                 });
@@ -98,7 +99,7 @@ exports.createPaymentIntent = async (req, res) => {
 
         // DUMMY PAYMENT MODE FOR LOCAL TESTING
         if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_test_dummy')) {
-            console.log("⚠️ Using Dummy Payment Mode");
+            logger.warn('Using dummy payment mode');
             return res.json({
                 clientSecret: 'mock_secret_for_testing'
             });
@@ -125,7 +126,7 @@ exports.createPaymentIntent = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Stripe Error:', error);
+        logger.error('Stripe error', { error: error.message, stack: error.stack });
         res.status(500).json({ error: error.message });
     }
 };
