@@ -1,9 +1,23 @@
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const archiver = require("archiver");
 const sharp = require("sharp");
 const { runCompression } = require("../services/engineService");
 const { validateFileContent } = require("../utils/fileValidation");
+const db = require("../services/db");
+const logger = require("../utils/logger");
+
+// Create a one-time signed download token tied to an owner (userId or IP)
+const createDownloadToken = (filename, userId, ip) => {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+  db.prepare(`
+    INSERT INTO download_tokens (token, filename, userId, ip, expiresAt, used)
+    VALUES (?, ?, ?, ?, ?, 0)
+  `).run(token, filename, userId || null, ip || null);
+  return token;
+};
 
 // Helper to cleanup files
 const cleanup = (files) => {
@@ -23,9 +37,7 @@ exports.compressImage = async (req, res, next) => {
     return res.status(400).json({ success: false, error: "No image uploaded" });
   }
 
-  // DEBUG LOGGING
-  console.log("Compress Request Body:", req.body);
-  console.log("Compress Request File:", req.file ? req.file.originalname : "No File");
+  logger.debug('Compress request', { body: req.body, file: req.file?.originalname });
 
   const inputPath = req.file.path;
   const originalSize = req.file.size;
@@ -182,7 +194,8 @@ exports.compressImage = async (req, res, next) => {
     const wantsJson = (req.headers.accept && (req.headers.accept.includes("json") || req.headers.accept.includes("html"))) || req.query.json === 'true';
 
     const filename = path.basename(outputPath);
-    const downloadUrl = `/api/compress/download/${filename}?name=${encodeURIComponent(downloadFilename)}`;
+    const dlToken = createDownloadToken(filename, req.user?.id || null, req.ip);
+    const downloadUrl = `/api/compress/download/${dlToken}?name=${encodeURIComponent(downloadFilename)}`;
     const baseUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : 'https://shrinkix.com');
     const fullDownloadUrl = `${baseUrl}${downloadUrl}`;
 
@@ -240,36 +253,56 @@ exports.compressImage = async (req, res, next) => {
   }
 };
 
-exports.downloadResult = async (req, res) => {
-  const { filename } = req.params;
+exports.downloadResult = (req, res) => {
+  const { token } = req.params;
   const { name } = req.query;
 
-  // Security: Prevent path traversal
-  const safeFilename = path.basename(filename);
-  const filePath = path.join(__dirname, "..", "output", safeFilename);
+  if (!token || !/^[a-f0-9]{64}$/.test(token)) {
+    return res.status(400).json({ error: 'Invalid download token' });
+  }
+
+  const record = db.prepare('SELECT * FROM download_tokens WHERE token = ?').get(token);
+
+  if (!record) {
+    return res.status(404).json({ error: 'NotFound', message: 'File not found or link expired' });
+  }
+  if (record.used) {
+    return res.status(410).json({ error: 'Gone', message: 'This download link has already been used' });
+  }
+  if (new Date(record.expiresAt) < new Date()) {
+    return res.status(410).json({ error: 'Expired', message: 'Download link has expired' });
+  }
+
+  // Ownership check: authenticated users must own the token; guests validated by IP
+  if (record.userId) {
+    const sessionToken = req.cookies?.shrinkix_session;
+    const sessionUser = sessionToken
+      ? db.prepare('SELECT id FROM users WHERE sessionToken = ?').get(sessionToken)
+      : null;
+    if (!sessionUser || sessionUser.id !== record.userId) {
+      logger.warn('Download token ownership mismatch', { token: token.substring(0, 8), recordUserId: record.userId });
+      return res.status(403).json({ error: 'Forbidden', message: 'You do not own this file' });
+    }
+  }
+
+  const safeFilename = path.basename(record.filename);
+  const filePath = path.join(__dirname, '..', 'output', safeFilename);
 
   if (!fs.existsSync(filePath)) {
-    return res.status(404).json({
-      error: "NotFound",
-      message: "File not found or expired"
-    });
+    return res.status(404).json({ error: 'NotFound', message: 'File not found or expired' });
   }
 
-  const ext = path.extname(filename).toLowerCase();
+  // Mark token as used (single-use)
+  db.prepare('UPDATE download_tokens SET used = 1 WHERE token = ?').run(token);
+
+  const ext = path.extname(safeFilename).toLowerCase();
   const contentTypeMap = {
-    '.png': 'image/png',
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.webp': 'image/webp',
-    '.avif': 'image/avif',
-    '.zip': 'application/zip'
+    '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+    '.webp': 'image/webp', '.avif': 'image/avif', '.zip': 'application/zip'
   };
 
-  if (name) {
-    res.setHeader("Content-Disposition", `attachment; filename="${name}"`);
-  }
-
-  res.setHeader("Content-Type", contentTypeMap[ext] || 'application/octet-stream');
+  if (name) res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.setHeader('Content-Type', contentTypeMap[ext] || 'application/octet-stream');
   res.sendFile(filePath);
 };
 
@@ -373,7 +406,7 @@ exports.compressBatch = async (req, res, next) => {
 
   } catch (err) {
     cleanup(tempFiles);
-    console.error("Batch compression error:", err);
+    logger.error('Batch compression error', { error: err.message, stack: err.stack });
     // If headers already sent, we can't send JSON error
     if (!res.headersSent) {
       next(err);

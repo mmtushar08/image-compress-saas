@@ -71,7 +71,13 @@ const requiredColumns = [
     { name: 'name', type: 'TEXT' }
 ];
 
+// api_keys table migrations
+const requiredApiKeyColumns = [
+    { name: 'keyIndex', type: 'TEXT' }
+];
+
 requiredColumns.forEach(col => addColumn('users', col.name, col.type));
+requiredApiKeyColumns.forEach(col => addColumn('api_keys', col.name, col.type));
 
 // Create API Keys Table
 db.prepare(`
@@ -79,12 +85,38 @@ db.prepare(`
         id TEXT PRIMARY KEY,
         userId TEXT NOT NULL,
         keyHash TEXT NOT NULL,
+        keyIndex TEXT,
         name TEXT,
         prefix TEXT,
         createdAt TEXT,
         lastUsedAt TEXT,
         status TEXT DEFAULT 'active',
         FOREIGN KEY(userId) REFERENCES users(id)
+    )
+`).run();
+
+// Fast lookup index on keyIndex (SHA-256 of raw key — O(1) auth instead of O(n) bcrypt loop)
+db.prepare(`CREATE INDEX IF NOT EXISTS idx_api_keys_keyindex ON api_keys(keyIndex)`).run();
+
+// Download tokens — ties a one-time token to a filename + owner so /download never exposes raw paths
+db.prepare(`
+    CREATE TABLE IF NOT EXISTS download_tokens (
+        token TEXT PRIMARY KEY,
+        filename TEXT NOT NULL,
+        userId TEXT,
+        ip TEXT,
+        expiresAt TEXT NOT NULL,
+        used INTEGER DEFAULT 0
+    )
+`).run();
+db.prepare(`CREATE INDEX IF NOT EXISTS idx_download_tokens_token ON download_tokens(token)`).run();
+
+// Guest rate limits — replaces in-memory Map so limits survive restarts and are shared across PM2 workers
+db.prepare(`
+    CREATE TABLE IF NOT EXISTS guest_limits (
+        ip TEXT PRIMARY KEY,
+        count INTEGER DEFAULT 0,
+        date TEXT NOT NULL
     )
 `).run();
 

@@ -5,6 +5,11 @@ const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sanitizeString, isValidEmail } = require('../utils/validation');
 const db = require('../services/db');
+const logger = require('../utils/logger');
+
+// Compute a fast, deterministic index for an API key (SHA-256, hex).
+// High-entropy keys (192-bit random) make this safe for auth lookup.
+const keyIndex = (rawKey) => crypto.createHash('sha256').update(rawKey).digest('hex');
 
 // --- Helper: Parse User from DB ---
 const parseUser = (user) => {
@@ -21,32 +26,24 @@ const parseUser = (user) => {
     };
 };
 
-// --- GUEST USAGE TRACKING (In-Memory) ---
-const guestUsage = new Map();
+// --- GUEST USAGE TRACKING (SQLite-backed — survives restarts, shared across PM2 workers) ---
+const GUEST_DAILY_LIMIT = 25;
 
 exports.checkGuestLimit = (ip) => {
     const today = new Date().toISOString().split('T')[0];
-    let record = guestUsage.get(ip);
-
-    if (!record || record.date !== today) {
-        record = { count: 0, date: today };
-        guestUsage.set(ip, record);
-    }
-    return {
-        usage: record.count,
-        remaining: Math.max(0, 25 - record.count),
-        limit: 25
-    };
+    const row = db.prepare('SELECT count, date FROM guest_limits WHERE ip = ?').get(ip);
+    const count = (row && row.date === today) ? row.count : 0;
+    return { usage: count, remaining: Math.max(0, GUEST_DAILY_LIMIT - count), limit: GUEST_DAILY_LIMIT };
 };
 
 exports.incrementGuestUsage = (ip) => {
     const today = new Date().toISOString().split('T')[0];
-    let record = guestUsage.get(ip);
-    if (!record || record.date !== today) {
-        record = { count: 0, date: today };
-    }
-    record.count += 1;
-    guestUsage.set(ip, record);
+    db.prepare(`
+        INSERT INTO guest_limits (ip, count, date) VALUES (?, 1, ?)
+        ON CONFLICT(ip) DO UPDATE SET
+            count = CASE WHEN date = excluded.date THEN count + 1 ELSE 1 END,
+            date  = excluded.date
+    `).run(ip, today);
 };
 
 // Plan Definitions
@@ -111,9 +108,9 @@ exports.register = async (req, res) => {
         const prefix = apiKey.substring(0, 7) + '...';
 
         db.prepare(`
-            INSERT INTO api_keys (id, userId, keyHash, name, prefix, createdAt, status)
-            VALUES (?, ?, ?, 'Default API Key', ?, ?, 'active')
-        `).run(keyId, userId, apiKeyHash, prefix, now);
+            INSERT INTO api_keys (id, userId, keyHash, keyIndex, name, prefix, createdAt, status)
+            VALUES (?, ?, ?, ?, 'Default API Key', ?, ?, 'active')
+        `).run(keyId, userId, apiKeyHash, keyIndex(apiKey), prefix, now);
 
         const magicLink = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
 
@@ -227,29 +224,31 @@ exports.verifyToken = (req, res) => {
 
 // --- Check Limit (Used by Auth Middleware) ---
 // --- Check Limit (Used by Auth Middleware) ---
-exports.checkLimit = async (providedKey) => {
-    // Get all Active keys for verification (Performance Note: in prod this should be optimized)
-    const keys = db.prepare('SELECT * FROM api_keys WHERE status = \'active\'').all();
+// O(1) API key lookup: SHA-256 index → single row → no bcrypt loop
+const findKeyByIndex = (providedKey) => {
+    const idx = keyIndex(providedKey);
+    // Fast path: key has a keyIndex (all keys created after this fix)
+    const byIndex = db.prepare("SELECT * FROM api_keys WHERE keyIndex = ? AND status = 'active'").get(idx);
+    if (byIndex) return byIndex;
 
-    let matchedKey = null;
-
-    for (const key of keys) {
-        const isMatch = await bcrypt.compare(providedKey, key.keyHash);
-        if (isMatch) {
-            matchedKey = key;
-            break;
-        }
+    // Slow fallback: legacy keys without keyIndex — bcrypt loop, will shrink over time as keys are regenerated
+    const legacyKeys = db.prepare("SELECT * FROM api_keys WHERE keyIndex IS NULL AND status = 'active'").all();
+    for (const k of legacyKeys) {
+        try {
+            if (bcrypt.compareSync(providedKey, k.keyHash)) return k;
+        } catch (_) {}
     }
+    return null;
+};
 
+exports.checkLimit = (providedKey) => {
+    const matchedKey = findKeyByIndex(providedKey);
     if (!matchedKey) return { allowed: false, user: null };
 
-    // Get user associated with key
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
     if (!user) return { allowed: false, user: null };
 
     const parsedUser = parseUser(user);
-    const planConfig = PLANS[parsedUser.plan] || PLANS.free;
-
     let allowed = false;
     let error = null;
 
@@ -264,37 +263,22 @@ exports.checkLimit = async (providedKey) => {
     return { allowed, user: parsedUser, error };
 };
 
-exports.incrementUsage = async (providedKey) => {
-    // We reuse logic similar to checkLimit but optimized if possible
-    // For now, iterate keys again to find match
-    const keys = db.prepare('SELECT * FROM api_keys WHERE status = \'active\'').all();
+exports.incrementUsage = (providedKey) => {
+    const matchedKey = findKeyByIndex(providedKey);
+    if (!matchedKey) return;
 
-    let matchedKey = null;
-    for (const key of keys) {
-        if (await bcrypt.compare(providedKey, key.keyHash)) {
-            matchedKey = key;
-            break;
-        }
-    }
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
+    if (!user) return;
 
-    if (matchedKey) {
-        // Update user stats
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
-        if (!user) return;
+    const parsedUser = parseUser(user);
+    const now = new Date().toISOString();
 
-        const parsedUser = parseUser(user);
+    db.prepare('UPDATE api_keys SET lastUsedAt = ? WHERE id = ?').run(now, matchedKey.id);
 
-        // Update Key Last Used
-        db.prepare('UPDATE api_keys SET lastUsedAt = ? WHERE id = ?').run(new Date().toISOString(), matchedKey.id);
-
-        if (parsedUser.usage < parsedUser.apiCredits) {
-            db.prepare('UPDATE users SET usage = usage + 1, lastUsedDate = ? WHERE id = ?')
-                .run(new Date().toISOString(), matchedKey.userId);
-        } else if (parsedUser.credits > 0) {
-            db.prepare('UPDATE users SET credits = credits - 1, lastUsedDate = ? WHERE id = ?')
-                .run(new Date().toISOString(), matchedKey.userId);
-        }
-
+    if (parsedUser.usage < parsedUser.apiCredits) {
+        db.prepare('UPDATE users SET usage = usage + 1, lastUsedDate = ? WHERE id = ?').run(now, matchedKey.userId);
+    } else if (parsedUser.credits > 0) {
+        db.prepare('UPDATE users SET credits = credits - 1, lastUsedDate = ? WHERE id = ?').run(now, matchedKey.userId);
     }
 };
 

@@ -75,7 +75,7 @@ router.post("/batch", anonymousLimiter, upload.array("images[]"), compressBatch)
 /**
  * Result Download
  */
-router.get("/download/:filename", require("../controllers/compressController").downloadResult);
+router.get("/download/:token", require("../controllers/compressController").downloadResult);
 
 // Helpful message for GET requests
 router.get("/batch", (req, res) => {
