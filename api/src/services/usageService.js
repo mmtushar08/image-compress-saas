@@ -1,7 +1,9 @@
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const db = require('./db');
 const logger = require('../utils/logger');
+const apiKeyRepo = require('../repositories/apiKeyRepository');
+const userRepo   = require('../repositories/userRepository');
+const guestRepo  = require('../repositories/guestLimitRepository');
 
 const GUEST_DAILY_LIMIT = 25;
 
@@ -24,17 +26,13 @@ const parseUser = (user) => {
 };
 
 // O(1) fast path via SHA-256 index; falls back to bcrypt loop for legacy keys
-const findKeyByIndex = (providedKey) => {
+const findKeyByIndex = async (providedKey) => {
     const idx = computeKeyIndex(providedKey);
-    const byIndex = db.prepare(
-        "SELECT * FROM api_keys WHERE keyIndex = ? AND status = 'active'"
-    ).get(idx);
+    const byIndex = await apiKeyRepo.findActiveByIndex(idx);
     if (byIndex) return byIndex;
 
     // Legacy keys (no keyIndex) — shrinks over time as users regenerate keys
-    const legacyKeys = db.prepare(
-        "SELECT * FROM api_keys WHERE keyIndex IS NULL AND status = 'active'"
-    ).all();
+    const legacyKeys = await apiKeyRepo.findActiveLegacyKeys();
     for (const k of legacyKeys) {
         try {
             if (bcrypt.compareSync(providedKey, k.keyHash)) return k;
@@ -43,11 +41,11 @@ const findKeyByIndex = (providedKey) => {
     return null;
 };
 
-const checkLimit = (providedKey) => {
-    const matchedKey = findKeyByIndex(providedKey);
+const checkLimit = async (providedKey) => {
+    const matchedKey = await findKeyByIndex(providedKey);
     if (!matchedKey) return { allowed: false, user: null };
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
+    const user = await userRepo.findById(matchedKey.userId);
     if (!user) return { allowed: false, user: null };
 
     const parsedUser = parseUser(user);
@@ -65,53 +63,45 @@ const checkLimit = (providedKey) => {
     return { allowed, user: parsedUser, error };
 };
 
-const incrementUsage = (providedKey) => {
-    const matchedKey = findKeyByIndex(providedKey);
+const incrementUsage = async (providedKey) => {
+    const matchedKey = await findKeyByIndex(providedKey);
     if (!matchedKey) return;
 
-    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(matchedKey.userId);
+    const user = await userRepo.findById(matchedKey.userId);
     if (!user) return;
 
     const parsedUser = parseUser(user);
     const now = new Date().toISOString();
 
-    db.prepare('UPDATE api_keys SET lastUsedAt = ? WHERE id = ?').run(now, matchedKey.id);
+    await apiKeyRepo.updateLastUsed(matchedKey.id, now);
 
     if (parsedUser.usage < parsedUser.apiCredits) {
-        db.prepare('UPDATE users SET usage = usage + 1, lastUsedDate = ? WHERE id = ?')
-            .run(now, matchedKey.userId);
+        await userRepo.incrementUsage(matchedKey.userId, now);
     } else if (parsedUser.credits > 0) {
-        db.prepare('UPDATE users SET credits = credits - 1, lastUsedDate = ? WHERE id = ?')
-            .run(now, matchedKey.userId);
+        await userRepo.decrementCredits(matchedKey.userId, now);
     }
 };
 
-const incrementUserWebUsage = (userId) => {
+const incrementUserWebUsage = async (userId) => {
     try {
-        db.prepare('UPDATE users SET dailyUsage = dailyUsage + 1, lastUsedDate = ? WHERE id = ?')
-            .run(new Date().toISOString(), userId);
+        await userRepo.incrementDailyUsage(userId, new Date().toISOString());
     } catch (error) {
         logger.error('Failed to increment web usage', { userId, error: error.message });
     }
 };
 
-// --- Guest rate limiting (SQLite-backed) ---
+// --- Guest rate limiting (SQLite/Postgres-backed) ---
 
-const checkGuestLimit = (ip) => {
+const checkGuestLimit = async (ip) => {
     const today = new Date().toISOString().split('T')[0];
-    const row = db.prepare('SELECT count, date FROM guest_limits WHERE ip = ?').get(ip);
-    const count = (row && row.date === today) ? row.count : 0;
+    const row = await guestRepo.findByIp(ip);
+    const count = (row && row.date === today) ? Number(row.count) : 0;
     return { usage: count, remaining: Math.max(0, GUEST_DAILY_LIMIT - count), limit: GUEST_DAILY_LIMIT };
 };
 
-const incrementGuestUsage = (ip) => {
+const incrementGuestUsage = async (ip) => {
     const today = new Date().toISOString().split('T')[0];
-    db.prepare(`
-        INSERT INTO guest_limits (ip, count, date) VALUES (?, 1, ?)
-        ON CONFLICT(ip) DO UPDATE SET
-            count = CASE WHEN date = excluded.date THEN count + 1 ELSE 1 END,
-            date  = excluded.date
-    `).run(ip, today);
+    await guestRepo.increment(ip, today);
 };
 
 module.exports = {

@@ -5,17 +5,15 @@ const archiver = require("archiver");
 const sharp = require("sharp");
 const { runCompression } = require("../services/engineService");
 const { validateFileContent } = require("../utils/fileValidation");
-const db = require("../services/db");
+const downloadTokenRepo = require("../repositories/downloadTokenRepository");
+const userRepo = require("../repositories/userRepository");
 const logger = require("../utils/logger");
 
 // Create a one-time signed download token tied to an owner (userId or IP)
-const createDownloadToken = (filename, userId, ip) => {
+const createDownloadToken = async (filename, userId, ip) => {
   const token = crypto.randomBytes(32).toString('hex');
   const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
-  db.prepare(`
-    INSERT INTO download_tokens (token, filename, userId, ip, expiresAt, used)
-    VALUES (?, ?, ?, ?, ?, 0)
-  `).run(token, filename, userId || null, ip || null);
+  await downloadTokenRepo.create({ token, filename, userId, ip, expiresAt });
   return token;
 };
 
@@ -167,8 +165,8 @@ exports.compressImage = async (req, res, next) => {
       compressionCount = (req.user.usage || 0) + 1;
     } else {
       const { incrementGuestUsage, checkGuestLimit } = require("./userController");
-      incrementGuestUsage(req.ip);
-      const guestStats = checkGuestLimit(req.ip);
+      await incrementGuestUsage(req.ip);
+      const guestStats = await checkGuestLimit(req.ip);
       compressionCount = guestStats.usage;
     }
 
@@ -194,7 +192,7 @@ exports.compressImage = async (req, res, next) => {
     const wantsJson = (req.headers.accept && (req.headers.accept.includes("json") || req.headers.accept.includes("html"))) || req.query.json === 'true';
 
     const filename = path.basename(outputPath);
-    const dlToken = createDownloadToken(filename, req.user?.id || null, req.ip);
+    const dlToken = await createDownloadToken(filename, req.user?.id || null, req.ip);
     const downloadUrl = `/api/compress/download/${dlToken}?name=${encodeURIComponent(downloadFilename)}`;
     const baseUrl = process.env.FRONTEND_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : 'https://shrinkix.com');
     const fullDownloadUrl = `${baseUrl}${downloadUrl}`;
@@ -253,7 +251,7 @@ exports.compressImage = async (req, res, next) => {
   }
 };
 
-exports.downloadResult = (req, res) => {
+exports.downloadResult = async (req, res) => {
   const { token } = req.params;
   const { name } = req.query;
 
@@ -261,7 +259,7 @@ exports.downloadResult = (req, res) => {
     return res.status(400).json({ error: 'Invalid download token' });
   }
 
-  const record = db.prepare('SELECT * FROM download_tokens WHERE token = ?').get(token);
+  const record = await downloadTokenRepo.findByToken(token);
 
   if (!record) {
     return res.status(404).json({ error: 'NotFound', message: 'File not found or link expired' });
@@ -277,7 +275,7 @@ exports.downloadResult = (req, res) => {
   if (record.userId) {
     const sessionToken = req.cookies?.shrinkix_session;
     const sessionUser = sessionToken
-      ? db.prepare('SELECT id FROM users WHERE sessionToken = ?').get(sessionToken)
+      ? await userRepo.findBySessionToken(sessionToken)
       : null;
     if (!sessionUser || sessionUser.id !== record.userId) {
       logger.warn('Download token ownership mismatch', { token: token.substring(0, 8), recordUserId: record.userId });
@@ -293,7 +291,7 @@ exports.downloadResult = (req, res) => {
   }
 
   // Mark token as used (single-use)
-  db.prepare('UPDATE download_tokens SET used = 1 WHERE token = ?').run(token);
+  await downloadTokenRepo.markUsed(token);
 
   const ext = path.extname(safeFilename).toLowerCase();
   const contentTypeMap = {

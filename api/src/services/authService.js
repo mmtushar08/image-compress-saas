@@ -1,10 +1,11 @@
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
-const db = require('./db');
 const logger = require('../utils/logger');
 const { sanitizeString } = require('../utils/validation');
 const { PLANS } = require('./planService');
 const { computeKeyIndex } = require('./usageService');
+const userRepo   = require('../repositories/userRepository');
+const apiKeyRepo = require('../repositories/apiKeyRepository');
 const {
     sendWelcomeEmail,
     sendMagicLink,
@@ -30,14 +31,13 @@ const register = async (req, res) => {
         const cleanEmail = sanitizeString(email).toLowerCase();
         const cleanName = name ? sanitizeString(name).trim() : '';
 
-        const existing = db.prepare('SELECT * FROM users WHERE email = ?').get(cleanEmail);
+        const existing = await userRepo.findByEmail(cleanEmail);
 
         if (existing) {
             const magicToken = crypto.randomBytes(32).toString('hex');
             const tokenExpiry = new Date(Date.now() + 3_600_000).toISOString();
 
-            db.prepare('UPDATE users SET magicToken = ?, tokenExpiry = ? WHERE email = ?')
-                .run(magicToken, tokenExpiry, cleanEmail);
+            await userRepo.updateByEmail(cleanEmail, { magicToken, tokenExpiry });
 
             const link = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
             sendMagicLink(cleanEmail, link, existing.name || 'there')
@@ -57,20 +57,34 @@ const register = async (req, res) => {
         const tokenExpiry  = new Date(Date.now() + 3_600_000).toISOString();
         const now          = new Date().toISOString();
 
-        db.prepare(`
-            INSERT INTO users (id, email, name, plan, webLimit, apiCredits, usage, dailyUsage, credits, createdAt, magicToken, tokenExpiry)
-            VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)
-        `).run(userId, cleanEmail, cleanName || null, selectedPlan,
-               planConfig.webLimit, planConfig.apiCredits,
-               planConfig.credits || 0, now, magicToken, tokenExpiry);
+        await userRepo.create({
+            id: userId,
+            email: cleanEmail,
+            name: cleanName || null,
+            plan: selectedPlan,
+            webLimit: planConfig.webLimit,
+            apiCredits: planConfig.apiCredits,
+            usage: 0,
+            dailyUsage: 0,
+            credits: planConfig.credits || 0,
+            createdAt: now,
+            magicToken,
+            tokenExpiry,
+        });
 
         const keyId  = 'key_' + crypto.randomBytes(8).toString('hex');
         const prefix = apiKey.substring(0, 7) + '...';
 
-        db.prepare(`
-            INSERT INTO api_keys (id, userId, keyHash, keyIndex, name, prefix, createdAt, status)
-            VALUES (?, ?, ?, ?, 'Default API Key', ?, ?, 'active')
-        `).run(keyId, userId, apiKeyHash, computeKeyIndex(apiKey), prefix, now);
+        await apiKeyRepo.create({
+            id: keyId,
+            userId,
+            keyHash: apiKeyHash,
+            keyIndex: computeKeyIndex(apiKey),
+            name: 'Default API Key',
+            prefix,
+            createdAt: now,
+            status: 'active',
+        });
 
         const magicLink = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
 
@@ -87,47 +101,58 @@ const register = async (req, res) => {
     }
 };
 
-const verifyToken = (req, res) => {
-    const { token, email } = req.body;
+const verifyToken = async (req, res) => {
+    try {
+        const { token, email } = req.body;
 
-    if (!token || !email) {
-        return res.status(400).json({ success: false, error: 'Token and email required' });
+        if (!token || !email) {
+            return res.status(400).json({ success: false, error: 'Token and email required' });
+        }
+
+        const user = await userRepo.findByMagicToken(token, email);
+
+        if (!user || new Date(user.tokenExpiry) < new Date()) {
+            logger.warn('Invalid or expired magic token attempt', { email });
+            return res.status(401).json({ success: false, error: 'Invalid or expired token' });
+        }
+
+        const sessionToken  = crypto.randomBytes(32).toString('hex');
+        const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        await userRepo.updateById(user.id, {
+            magicToken: null,
+            tokenExpiry: null,
+            sessionToken,
+            sessionExpiry,
+        });
+
+        res.cookie('shrinkix_session', sessionToken, {
+            httpOnly: true,
+            secure:   process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge:   24 * 60 * 60 * 1000,
+        });
+
+        logger.info('User verified and logged in', { email });
+        res.json({ success: true, user: parseUser(user) });
+    } catch (error) {
+        logger.error('Token verification error', { error: error.message });
+        res.status(500).json({ success: false, error: 'Verification failed' });
     }
-
-    const user = db.prepare('SELECT * FROM users WHERE magicToken = ? AND email = ?').get(token, email);
-
-    if (!user || new Date(user.tokenExpiry) < new Date()) {
-        logger.warn('Invalid or expired magic token attempt', { email });
-        return res.status(401).json({ success: false, error: 'Invalid or expired token' });
-    }
-
-    db.prepare('UPDATE users SET magicToken = null, tokenExpiry = null WHERE id = ?').run(user.id);
-
-    const sessionToken  = crypto.randomBytes(32).toString('hex');
-    const sessionExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-    db.prepare('UPDATE users SET sessionToken = ?, sessionExpiry = ? WHERE id = ?')
-        .run(sessionToken, sessionExpiry, user.id);
-
-    res.cookie('shrinkix_session', sessionToken, {
-        httpOnly: true,
-        secure:   process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge:   24 * 60 * 60 * 1000,
-    });
-
-    logger.info('User verified and logged in', { email });
-    res.json({ success: true, user: parseUser(user) });
 };
 
-const logout = (req, res) => {
-    const sessionToken = req.cookies?.shrinkix_session;
-    if (sessionToken) {
-        db.prepare('UPDATE users SET sessionToken = null, sessionExpiry = null WHERE sessionToken = ?')
-            .run(sessionToken);
+const logout = async (req, res) => {
+    try {
+        const sessionToken = req.cookies?.shrinkix_session;
+        if (sessionToken) {
+            await userRepo.clearSession(sessionToken);
+        }
+        res.clearCookie('shrinkix_session');
+        res.json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+        logger.error('Logout error', { error: error.message });
+        res.status(500).json({ success: false, error: 'Logout failed' });
     }
-    res.clearCookie('shrinkix_session');
-    res.json({ success: true, message: 'Logged out successfully' });
 };
 
 module.exports = { register, verifyToken, logout };

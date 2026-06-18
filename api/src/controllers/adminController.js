@@ -1,40 +1,33 @@
-const db     = require('../services/db');
 const logger = require('../utils/logger');
 const { PLANS } = require('./userController');
+const userRepo = require('../repositories/userRepository');
+
+const parseUser = (user) => ({
+    ...user,
+    invoiceDetails: user.invoiceDetails ? JSON.parse(user.invoiceDetails) : {},
+    webLimit:   Number(user.webLimit),
+    apiCredits: Number(user.apiCredits),
+    usage:      Number(user.usage),
+    dailyUsage: Number(user.dailyUsage),
+    credits:    Number(user.credits),
+});
 
 /**
  * Get system-wide statistics
  */
-exports.getStats = (req, res) => {
+exports.getStats = async (req, res) => {
     try {
-        // Total users
-        const totalUsers = db.prepare('SELECT COUNT(*) as count FROM users').get().count;
-
-        // Users by plan
-        const planBreakdown = db.prepare(`
-            SELECT plan, COUNT(*) as count 
-            FROM users 
-            GROUP BY plan
-        `).all();
-
-        // Total compressions (sum of all usage)
-        const totalCompressions = db.prepare('SELECT SUM(usage) as total FROM users').get().total || 0;
-
-        // Active users (used in last 30 days)
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
-        const activeUsers = db.prepare(`
-            SELECT COUNT(*) as count 
-            FROM users 
-            WHERE lastUsedDate > ?
-        `).get(thirtyDaysAgo).count;
+        const sevenDaysAgo  = new Date(Date.now() - 7  * 24 * 60 * 60 * 1000).toISOString();
 
-        // Recent signups (last 7 days)
-        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-        const recentSignups = db.prepare(`
-            SELECT COUNT(*) as count 
-            FROM users 
-            WHERE createdAt > ?
-        `).get(sevenDaysAgo).count;
+        const [totalUsers, planBreakdown, totalCompressions, activeUsers, recentSignups] =
+            await Promise.all([
+                userRepo.countAll(),
+                userRepo.planBreakdown(),
+                userRepo.totalCompressions(),
+                userRepo.countActiveSince(thirtyDaysAgo),
+                userRepo.countCreatedSince(sevenDaysAgo),
+            ]);
 
         res.json({
             success: true,
@@ -43,8 +36,8 @@ exports.getStats = (req, res) => {
                 activeUsers,
                 recentSignups,
                 totalCompressions,
-                planBreakdown
-            }
+                planBreakdown: planBreakdown.map(p => ({ plan: p.plan, count: Number(p.count) })),
+            },
         });
     } catch (error) {
         logger.error('Admin getStats error', { error: error.message });
@@ -55,65 +48,24 @@ exports.getStats = (req, res) => {
 /**
  * Get all users with pagination and filtering
  */
-exports.getAllUsers = (req, res) => {
+exports.getAllUsers = async (req, res) => {
     try {
         const { page = 1, limit = 50, search = '', plan = '' } = req.query;
-        const offset = (page - 1) * limit;
+        const pageNum  = parseInt(page);
+        const limitNum = parseInt(limit);
+        const offset   = (pageNum - 1) * limitNum;
 
-        let query = 'SELECT * FROM users WHERE 1=1';
-        const params = [];
-
-        // Search by email
-        if (search) {
-            query += ' AND email LIKE ?';
-            params.push(`%${search}%`);
-        }
-
-        // Filter by plan
-        if (plan) {
-            query += ' AND plan = ?';
-            params.push(plan);
-        }
-
-        // Order by most recent first
-        query += ' ORDER BY createdAt DESC LIMIT ? OFFSET ?';
-        params.push(parseInt(limit), parseInt(offset));
-
-        const users = db.prepare(query).all(...params);
-
-        // Get total count for pagination
-        let countQuery = 'SELECT COUNT(*) as count FROM users WHERE 1=1';
-        const countParams = [];
-        if (search) {
-            countQuery += ' AND email LIKE ?';
-            countParams.push(`%${search}%`);
-        }
-        if (plan) {
-            countQuery += ' AND plan = ?';
-            countParams.push(plan);
-        }
-        const totalCount = db.prepare(countQuery).get(...countParams).count;
-
-        // Parse invoice details for each user
-        const parsedUsers = users.map(user => ({
-            ...user,
-            invoiceDetails: user.invoiceDetails ? JSON.parse(user.invoiceDetails) : {},
-            webLimit: Number(user.webLimit),
-            apiCredits: Number(user.apiCredits),
-            usage: Number(user.usage),
-            dailyUsage: Number(user.dailyUsage),
-            credits: Number(user.credits)
-        }));
+        const { users, total } = await userRepo.listUsers({ search, plan, limit: limitNum, offset });
 
         res.json({
             success: true,
-            users: parsedUsers,
+            users: users.map(parseUser),
             pagination: {
-                page: parseInt(page),
-                limit: parseInt(limit),
-                total: totalCount,
-                totalPages: Math.ceil(totalCount / limit)
-            }
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum),
+            },
         });
     } catch (error) {
         logger.error('Admin getAllUsers error', { error: error.message });
@@ -124,29 +76,16 @@ exports.getAllUsers = (req, res) => {
 /**
  * Get detailed information for a specific user
  */
-exports.getUserDetails = (req, res) => {
+exports.getUserDetails = async (req, res) => {
     try {
         const { id } = req.params;
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        const user = await userRepo.findById(id);
 
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        const parsedUser = {
-            ...user,
-            invoiceDetails: user.invoiceDetails ? JSON.parse(user.invoiceDetails) : {},
-            webLimit: Number(user.webLimit),
-            apiCredits: Number(user.apiCredits),
-            usage: Number(user.usage),
-            dailyUsage: Number(user.dailyUsage),
-            credits: Number(user.credits)
-        };
-
-        res.json({
-            success: true,
-            user: parsedUser
-        });
+        res.json({ success: true, user: parseUser(user) });
     } catch (error) {
         logger.error('Admin getUserDetails error', { error: error.message });
         res.status(500).json({ error: 'Failed to fetch user details' });
@@ -156,7 +95,7 @@ exports.getUserDetails = (req, res) => {
 /**
  * Update user's plan (admin override)
  */
-exports.updateUserPlan = (req, res) => {
+exports.updateUserPlan = async (req, res) => {
     try {
         const { id } = req.params;
         const { plan } = req.body;
@@ -165,38 +104,25 @@ exports.updateUserPlan = (req, res) => {
             return res.status(400).json({ error: 'Invalid plan' });
         }
 
-        const user = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        const user = await userRepo.findById(id);
         if (!user) {
             return res.status(404).json({ error: 'User not found' });
         }
 
         const planConfig = PLANS[plan];
-        const planUpdatedAt = new Date().toISOString();
-
-        db.prepare(`
-            UPDATE users 
-            SET plan = ?, 
-                webLimit = ?, 
-                apiCredits = ?, 
-                planUpdatedAt = ? 
-            WHERE id = ?
-        `).run(
+        await userRepo.updateById(id, {
             plan,
-            planConfig.webLimit || 20,
-            planConfig.apiCredits || 0,
-            planUpdatedAt,
-            id
-        );
+            webLimit:   planConfig.webLimit || 20,
+            apiCredits: planConfig.apiCredits || 0,
+            planUpdatedAt: new Date().toISOString(),
+        });
 
-        const updatedUser = db.prepare('SELECT * FROM users WHERE id = ?').get(id);
+        const updatedUser = await userRepo.findById(id);
 
         res.json({
             success: true,
             message: `User plan updated to ${plan}`,
-            user: {
-                ...updatedUser,
-                invoiceDetails: updatedUser.invoiceDetails ? JSON.parse(updatedUser.invoiceDetails) : {}
-            }
+            user: parseUser(updatedUser),
         });
     } catch (error) {
         logger.error('Admin updateUserPlan error', { error: error.message });

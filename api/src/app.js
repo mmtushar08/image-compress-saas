@@ -116,7 +116,7 @@ app.get('/api/check-limit', async (req, res) => {
     }
 
     const { checkGuestLimit } = require('./controllers/userController');
-    const guestStats = checkGuestLimit(req.ip);
+    const guestStats = await checkGuestLimit(req.ip);
     res.json({
         remaining:   guestStats.remaining,
         plan:        'guest',

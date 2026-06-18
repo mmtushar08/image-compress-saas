@@ -1,5 +1,10 @@
 const request = require('supertest');
 const app     = require('../app');
+const knex    = require('../db');
+
+afterAll(async () => {
+    await knex.destroy(); // close the connection pool so Jest exits cleanly
+});
 
 describe('GET /api/health', () => {
     it('returns 200 with status ok', async () => {
@@ -12,8 +17,7 @@ describe('GET /api/health', () => {
 });
 
 describe('GET /api/nonexistent', () => {
-    it('returns something (not a crash) for unknown API routes', async () => {
-        // The catch-all serves index.html for non-API routes; API routes 404 differently
+    it('does not crash on unknown routes', async () => {
         const res = await request(app).get('/api/nonexistent-route-xyz');
         expect(res.status).toBeGreaterThanOrEqual(200);
         expect(res.status).toBeLessThan(600);

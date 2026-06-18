@@ -1,42 +1,42 @@
 const cron   = require('node-cron');
-const db     = require('./db');
 const logger = require('../utils/logger');
+const userRepo  = require('../repositories/userRepository');
+const guestRepo = require('../repositories/guestLimitRepository');
+const downloadTokenRepo = require('../repositories/downloadTokenRepository');
 
 const initCron = () => {
     logger.info('Initializing cron jobs');
 
     // Daily reset — midnight UTC
-    cron.schedule('0 0 * * *', () => {
+    cron.schedule('0 0 * * *', async () => {
         logger.info('Running nightly reset job');
         try {
-            const info = db.prepare('UPDATE users SET dailyUsage = 0').run();
-            // Also purge expired guest_limits rows older than today
+            const changes = await userRepo.resetDailyUsage();
             const today = new Date().toISOString().split('T')[0];
-            db.prepare("DELETE FROM guest_limits WHERE date < ?").run(today);
-            logger.info('Nightly reset complete', { usersReset: info.changes });
+            await guestRepo.purgeBefore(today);
+            logger.info('Nightly reset complete', { usersReset: changes });
         } catch (error) {
             logger.error('Nightly reset job failed', { error: error.message, stack: error.stack });
         }
     }, { timezone: 'Etc/UTC' });
 
     // Monthly reset — 1st of month, midnight UTC
-    cron.schedule('0 0 1 * *', () => {
+    cron.schedule('0 0 1 * *', async () => {
         logger.info('Running monthly usage reset job');
         try {
-            const info = db.prepare('UPDATE users SET usage = 0').run();
-            logger.info('Monthly reset complete', { usersReset: info.changes });
+            const changes = await userRepo.resetMonthlyUsage();
+            logger.info('Monthly reset complete', { usersReset: changes });
         } catch (error) {
             logger.error('Monthly reset job failed', { error: error.message, stack: error.stack });
         }
     }, { timezone: 'Etc/UTC' });
 
-    // Purge expired download tokens — every hour
-    cron.schedule('0 * * * *', () => {
+    // Purge expired/used download tokens — every hour
+    cron.schedule('0 * * * *', async () => {
         try {
-            const info = db.prepare("DELETE FROM download_tokens WHERE expiresAt < ? OR used = 1")
-                .run(new Date().toISOString());
-            if (info.changes > 0) {
-                logger.debug('Purged expired download tokens', { count: info.changes });
+            const count = await downloadTokenRepo.purgeExpiredOrUsed(new Date().toISOString());
+            if (count > 0) {
+                logger.debug('Purged expired download tokens', { count });
             }
         } catch (error) {
             logger.error('Download token purge failed', { error: error.message });

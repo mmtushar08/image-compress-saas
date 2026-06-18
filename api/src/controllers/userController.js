@@ -4,13 +4,15 @@
  *   services/authService.js   — register, verifyToken, logout
  *   services/planService.js   — PLANS, upgradeUserPlan
  *   services/usageService.js  — checkLimit, incrementUsage, guest limits
+ * Data access lives in repositories/.
  *
  * All exports are preserved so existing require('./userController') calls
  * in routes, middleware, and other controllers continue to work unchanged.
  */
-const db      = require('../services/db');
 const logger  = require('../utils/logger');
 const { sanitizeString, isValidEmail } = require('../utils/validation');
+const userRepo   = require('../repositories/userRepository');
+const apiKeyRepo = require('../repositories/apiKeyRepository');
 
 // --- Re-export from services ---
 const { register, verifyToken, logout } = require('../services/authService');
@@ -49,24 +51,28 @@ const parseUser = (user) => {
     };
 };
 
-exports.getProfile = (req, res) => {
+exports.getProfile = async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const freshUser = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
-
     try {
-        const keyRecord = db.prepare(
-            "SELECT prefix FROM api_keys WHERE userId = ? AND status = 'active' LIMIT 1"
-        ).get(req.user.id);
-        if (keyRecord?.prefix) freshUser.apiKey = keyRecord.prefix;
-    } catch (e) {
-        logger.warn('Could not fetch API key prefix for profile', { userId: req.user.id, error: e.message });
-    }
+        const freshUser = await userRepo.findById(req.user.id);
+        if (!freshUser) return res.status(404).json({ error: 'User not found' });
 
-    res.json({ success: true, user: parseUser(freshUser) });
+        try {
+            const keyRecord = await apiKeyRepo.findActivePrefixByUserId(req.user.id);
+            if (keyRecord?.prefix) freshUser.apiKey = keyRecord.prefix;
+        } catch (e) {
+            logger.warn('Could not fetch API key prefix for profile', { userId: req.user.id, error: e.message });
+        }
+
+        res.json({ success: true, user: parseUser(freshUser) });
+    } catch (error) {
+        logger.error('Get profile failed', { userId: req.user.id, error: error.message });
+        res.status(500).json({ success: false, error: 'Failed to load profile' });
+    }
 };
 
-exports.updateProfile = (req, res) => {
+exports.updateProfile = async (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
     const { name, company, address, billingEmail, vatNumber } = req.body;
@@ -80,8 +86,7 @@ exports.updateProfile = (req, res) => {
             vatNumber:    vatNumber    ? sanitizeString(vatNumber)    : null,
         });
 
-        db.prepare('UPDATE users SET name = ?, invoiceDetails = ? WHERE id = ?')
-            .run(cleanName, invoiceDetails, req.user.id);
+        await userRepo.updateById(req.user.id, { name: cleanName, invoiceDetails });
 
         logger.info('User profile updated', { userId: req.user.id });
         res.json({ success: true, message: 'Profile updated successfully' });

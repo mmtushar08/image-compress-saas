@@ -1,5 +1,5 @@
-const db = require('./db');
 const logger = require('../utils/logger');
+const userRepo = require('../repositories/userRepository');
 
 const PLANS = {
     free:           { name: 'Free',           price: 0,  webLimit: 20, apiCredits: 500,   maxFileSize: 5   * 1024 * 1024, credits: 0 },
@@ -12,8 +12,8 @@ const PLANS = {
     'credit-6.5k':  { name: '6,500 Credits',  price: 56, credits: 6500, type: 'credit' },
 };
 
-const upgradeUserPlan = (email, planName, paymentId) => {
-    const row = db.prepare('SELECT * FROM users WHERE email = ?').get(email);
+const upgradeUserPlan = async (email, planName, paymentId) => {
+    const row = await userRepo.findByEmail(email);
     if (!row) return null;
 
     // Normalize legacy plan aliases
@@ -28,10 +28,9 @@ const upgradeUserPlan = (email, planName, paymentId) => {
             logger.error('Invalid credit bundle requested', { planName, email });
             return null;
         }
-        const newCredits = (row.credits || 0) + bundle.credits;
+        const newCredits = (Number(row.credits) || 0) + bundle.credits;
         logger.info('Adding credits to user', { email, added: bundle.credits, newBalance: newCredits });
-        db.prepare('UPDATE users SET credits = ?, lastPaymentId = ? WHERE email = ?')
-            .run(newCredits, paymentId, email);
+        await userRepo.updateByEmail(email, { credits: newCredits, lastPaymentId: paymentId });
         return { ...row, credits: newCredits };
     }
 
@@ -45,12 +44,14 @@ const upgradeUserPlan = (email, planName, paymentId) => {
 
     logger.info('Upgrading user plan', { email, from: row.plan, to: targetPlan });
 
-    db.prepare(`
-        UPDATE users
-        SET plan = ?, lastPaymentId = ?, planUpdatedAt = ?,
-            webLimit = ?, apiCredits = ?, usage = 0
-        WHERE email = ?
-    `).run(targetPlan, paymentId, planUpdatedAt, planConfig.webLimit || 20, planConfig.apiCredits || 0, email);
+    await userRepo.updateByEmail(email, {
+        plan: targetPlan,
+        lastPaymentId: paymentId,
+        planUpdatedAt,
+        webLimit: planConfig.webLimit || 20,
+        apiCredits: planConfig.apiCredits || 0,
+        usage: 0,
+    });
 
     return {
         ...row,
