@@ -8,26 +8,20 @@ export default function Navbar() {
     return (
         <header className="navbar">
             <Link to="/" className="brand">
-                Shrinkix
+                shrinkix
             </Link>
             <nav className="nav-menu">
-                <Link to="/" className={`nav-link ${path === '/' ? 'active' : ''}`}>
-                    Home
-                </Link>
-                <Link to="/compress" className={`nav-link ${path === '/compress' ? 'active' : ''}`}>
-                    Compress
-                </Link>
-                <Link to="/convert" className={`nav-link ${path === '/convert' ? 'active' : ''}`}>
-                    Convert
-                </Link>
-                <Link to="/developers" className={`nav-link ${path.startsWith('/developers') ? 'active' : ''}`}>
-                    API/Developers
-                </Link>
-                <Link to="/wordpress" className={`nav-link ${path === '/wordpress' ? 'active' : ''}`}>
-                    WordPress
-                </Link>
+                <a href="/#features" className="nav-link">
+                    Features
+                </a>
                 <Link to="/pricing" className={`nav-link ${path === '/pricing' ? 'active' : ''}`}>
                     Pricing
+                </Link>
+                <Link to="/developers" className={`nav-link ${path.startsWith('/developers') ? 'active' : ''}`}>
+                    API
+                </Link>
+                <Link to="/blog" className={`nav-link ${path === '/blog' ? 'active' : ''}`}>
+                    Blog
                 </Link>
                 {isLoggedIn ? (
                     <Link to="/dashboard" className="nav-btn">
@@ -35,7 +29,7 @@ export default function Navbar() {
                     </Link>
                 ) : (
                     <Link to="/login" className="nav-btn">
-                        Login
+                        Sign In
                     </Link>
                 )}
             </nav>

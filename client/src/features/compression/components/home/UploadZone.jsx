@@ -101,7 +101,8 @@ export default function UploadZone({ onFilesSelected, limitInfo, targetFormats, 
                     <div className="upload-icon">
                         <UploadCloud size={48} />
                     </div>
-                    <p className="drop-text">Drag & drop your images here</p>
+                    <p className="drop-text">Drop your images here or</p>
+                    <button className="upload-file-btn">Upload Files</button>
                     <p className="limit-text">
                         Supports PNG, JPG, WebP, AVIF up to {formatFileSize(limitInfo.maxFileSize)}
                     </p>

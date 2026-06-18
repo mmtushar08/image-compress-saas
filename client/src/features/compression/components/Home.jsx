@@ -101,6 +101,21 @@ export default function Home() {
                 isProcessing={isProcessing}
             />
 
+            <section className="stats-bar-section">
+                <div className="stats-bar">
+                    <div className="stat-item">
+                        <span className="stat-number">74<span className="stat-pct">%</span></span>
+                        <span className="stat-label-top">Reduction</span>
+                        <span className="stat-label-sub">Smaller, Faster Files</span>
+                    </div>
+                    <div className="stat-divider"></div>
+                    <div className="stat-item">
+                        <span className="stat-label-top stat-big">Lossless Quality</span>
+                        <span className="stat-label-sub">Perfectly Preserved</span>
+                    </div>
+                </div>
+            </section>
+
             <NewHeroSection />
 
 
@@ -140,6 +155,11 @@ export default function Home() {
 
             {/* FAQ */}
             <FAQ />
+
+            <section className="cta-section">
+                <a href="/login" className="cta-main-btn">Try Shrinkix for Free</a>
+                <p className="cta-sub">Experience the power of smarter compression</p>
+            </section>
         </main>
     );
 }
