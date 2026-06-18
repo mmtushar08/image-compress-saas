@@ -10,7 +10,7 @@ export default function ApiSignupForm() {
             const response = await fetch('/api/users/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ...formData, plan: 'free' })
+                body: JSON.stringify({ ...formData, plan: 'free', isSignup: true })
             });
             const data = await response.json();
             if (data.success) {

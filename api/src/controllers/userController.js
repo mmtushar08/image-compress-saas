@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const { sendWelcomeEmail, sendLimitReachedEmail, sendMagicLink } = require('../services/emailService');
+const { sendWelcomeEmail, sendLimitReachedEmail, sendMagicLink, sendAdminNewUserNotification } = require('../services/emailService');
 const crypto = require('crypto');
 const bcrypt = require('bcrypt');
 const { sanitizeString, isValidEmail } = require('../utils/validation');
@@ -64,87 +64,66 @@ exports.PLANS = PLANS;
 
 exports.register = async (req, res) => {
     try {
-        const { email, plan, isSignup } = req.body;
+        const { email, name, plan } = req.body;
         const cleanEmail = sanitizeString(email).toLowerCase();
+        const cleanName = name ? sanitizeString(name).trim() : '';
 
         let existing = db.prepare('SELECT * FROM users WHERE email = ?').get(cleanEmail);
 
         if (existing) {
-            // Send login link for existing users
+            // Existing user — send magic login link
             const magicToken = crypto.randomBytes(32).toString('hex');
-            const tokenExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+            const tokenExpiry = new Date(Date.now() + 3600000).toISOString();
 
             db.prepare('UPDATE users SET magicToken = ?, tokenExpiry = ? WHERE email = ?')
                 .run(magicToken, tokenExpiry, cleanEmail);
 
-            // Include email in URL for POST verification
             const link = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
+            const displayName = existing.name || 'there';
 
-            // Extract name if available
-            let name = 'there';
-            try {
-                if (existing.invoiceDetails) {
-                    const details = JSON.parse(existing.invoiceDetails);
-                    if (details.name) name = details.name;
-                }
-            } catch (e) { /* ignore parse error */ }
-
-            // Fire and forget email
-            sendMagicLink(cleanEmail, link, name).catch(err => console.error("Async Magic Link Error:", err));
+            sendMagicLink(cleanEmail, link, displayName).catch(err => console.error("Async Magic Link Error:", err));
 
             return res.json({ success: true, message: 'Magic link sent to your email.' });
         }
 
-        // If user doesn't exist, check if it's a valid signup attempt
-        if (!isSignup) {
-            // Reject login attempt for non-existent users
-            return res.status(404).json({
-                success: false,
-                error: 'No account found with this email. Please sign up from the Developer page first.'
-            });
-        }
-
-        // Create new user (Only if isSignup is true)
+        // New user — create account
         const apiKey = 'sk_' + crypto.randomBytes(24).toString('hex');
         const apiKeyHash = await bcrypt.hash(apiKey, 10);
         const userId = crypto.randomUUID();
         const selectedPlan = PLANS[plan] ? plan : 'free';
         const planConfig = PLANS[selectedPlan];
 
-        // Generate Magic Token for new user immediately
         const magicToken = crypto.randomBytes(32).toString('hex');
-        const tokenExpiry = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+        const tokenExpiry = new Date(Date.now() + 3600000).toISOString();
+        const now = new Date().toISOString();
 
         db.prepare(`INSERT INTO users (
-            id, email, plan, webLimit, apiCredits, usage, dailyUsage, credits, createdAt, magicToken, tokenExpiry
-        ) VALUES (?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)`)
+            id, email, name, plan, webLimit, apiCredits, usage, dailyUsage, credits, createdAt, magicToken, tokenExpiry
+        ) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?, ?, ?)`)
             .run(
-                userId, cleanEmail, selectedPlan,
+                userId, cleanEmail, cleanName || null, selectedPlan,
                 planConfig.webLimit, planConfig.apiCredits,
-                planConfig.credits || 0, new Date().toISOString(),
+                planConfig.credits || 0, now,
                 magicToken, tokenExpiry
             );
 
-        // Create Default API Key in new table
         const keyId = 'key_' + crypto.randomBytes(8).toString('hex');
         const prefix = apiKey.substring(0, 7) + '...';
 
         db.prepare(`
             INSERT INTO api_keys (id, userId, keyHash, name, prefix, createdAt, status)
             VALUES (?, ?, ?, 'Default API Key', ?, ?, 'active')
-        `).run(keyId, userId, apiKeyHash, prefix, new Date().toISOString());
+        `).run(keyId, userId, apiKeyHash, prefix, now);
 
-        // Send Welcome with Magic Link (Async - don't wait)
-        // Include email in verification link
         const magicLink = `${process.env.FRONTEND_URL}/verify?token=${magicToken}&email=${encodeURIComponent(cleanEmail)}`;
 
-        // Fire and forget email to speed up response
-        sendWelcomeEmail(cleanEmail, magicLink).catch(err => console.error("Async Email Error:", err));
+        // Notify user and admin (fire and forget)
+        sendWelcomeEmail(cleanEmail, magicLink, cleanName || 'there').catch(err => console.error("Async Email Error:", err));
+        sendAdminNewUserNotification(cleanEmail, cleanName, selectedPlan).catch(err => console.error("Async Admin Notify Error:", err));
 
         res.json({
             success: true,
-            apiKey,
-            message: 'Account created. Save your API key - you won\'t see it again!'
+            message: 'Account created! Check your email for the access link.'
         });
     } catch (error) {
         console.error("Register Error:", error);
@@ -177,33 +156,19 @@ exports.getProfile = (req, res) => {
 exports.updateProfile = (req, res) => {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
 
-    const { company, address, billingEmail, vatNumber } = req.body;
+    const { name, company, address, billingEmail, vatNumber } = req.body;
 
     try {
-        // Validate inputs (basic)
-        const updates = {
+        const cleanName = name ? sanitizeString(name).trim() : null;
+        const invoiceDetails = JSON.stringify({
             company: company ? sanitizeString(company) : null,
             address: address ? sanitizeString(address) : null,
             billingEmail: billingEmail && isValidEmail(billingEmail) ? billingEmail : null,
-            vatNumber: vatNumber ? sanitizeString(vatNumber) : null
-        };
+            vatNumber: vatNumber ? sanitizeString(vatNumber) : null,
+        });
 
-        // Create invoiceDetails JSON
-        const invoiceDetails = JSON.stringify(updates);
-
-        // Update DB
-        db.prepare(`
-            UPDATE users 
-            SET company = ?, address = ?, billingEmail = ?, vatNumber = ?, invoiceDetails = ?
-            WHERE id = ?
-        `).run(
-            updates.company,
-            updates.address,
-            updates.billingEmail,
-            updates.vatNumber,
-            invoiceDetails,
-            req.user.id
-        );
+        db.prepare(`UPDATE users SET name = ?, invoiceDetails = ? WHERE id = ?`)
+            .run(cleanName, invoiceDetails, req.user.id);
 
         res.json({ success: true, message: 'Profile updated successfully' });
     } catch (error) {

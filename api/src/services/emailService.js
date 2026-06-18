@@ -100,24 +100,16 @@ const getTemplate = (content, actionButton, isMagicLink = false) => {
     `;
 };
 
-exports.sendWelcomeEmail = async (email, dashboardLink, isApiUser = true) => {
+exports.sendWelcomeEmail = async (email, dashboardLink, name = 'there') => {
     const link = dashboardLink || `${FRONTEND_URL}/dashboard`;
+    const greeting = name && name !== 'there' ? name : 'there';
 
-    let content;
-
-    if (isApiUser) {
-        content = `
-            <p>Hi there,</p>
-            <p>Here is the link to your dashboard. Go grab your API key!</p>
-            <p>You can always access your dashboard again purely by logging in.</p>
-        `;
-    } else {
-        content = `
-            <p>Hi there,</p>
-            <p>Thanks for subscribing to our Web Plan!</p>
-            <p>Click the button below to access your premium unlimited dashboard.</p>
-        `;
-    }
+    const content = `
+        <p>Hi ${greeting},</p>
+        <p>Welcome to Shrinkix! Your account is ready.</p>
+        <p>Click the button below to access your dashboard and API key.</p>
+        <p>You can always log back in by entering your email on the sign-in page.</p>
+    `;
 
     const button = `<a href="${link}" class="btn">Visit your dashboard</a>`;
 
@@ -158,6 +150,35 @@ exports.sendMagicLink = async (email, magicLink, name = 'there') => {
     } catch (error) {
         console.error('❌ Failed to send magic link email:', error);
         return false;
+    }
+};
+
+exports.sendAdminNewUserNotification = async (userEmail, userName, plan) => {
+    const adminEmail = process.env.ADMIN_EMAIL;
+    if (!adminEmail) return; // silently skip if not configured
+
+    const content = `
+        <p>A new user has registered on Shrinkix.</p>
+        <table style="border-collapse:collapse;width:100%;font-size:15px;">
+            <tr><td style="padding:6px 12px;color:#888;">Name</td><td style="padding:6px 12px;"><strong>${userName || '—'}</strong></td></tr>
+            <tr><td style="padding:6px 12px;color:#888;">Email</td><td style="padding:6px 12px;"><strong>${userEmail}</strong></td></tr>
+            <tr><td style="padding:6px 12px;color:#888;">Plan</td><td style="padding:6px 12px;"><strong>${plan}</strong></td></tr>
+            <tr><td style="padding:6px 12px;color:#888;">Time</td><td style="padding:6px 12px;">${new Date().toUTCString()}</td></tr>
+        </table>
+    `;
+    const button = `<a href="${FRONTEND_URL}/admin" class="btn">View in Admin</a>`;
+    const html = getTemplate(content, button);
+
+    try {
+        await transporter.sendMail({
+            from: FROM_EMAIL,
+            to: adminEmail,
+            subject: `New signup: ${userName || userEmail} (${plan})`,
+            html,
+            text: `New signup — Name: ${userName || '—'}, Email: ${userEmail}, Plan: ${plan}`
+        });
+    } catch (error) {
+        console.error('❌ Failed to send admin notification:', error);
     }
 };
 

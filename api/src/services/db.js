@@ -67,7 +67,8 @@ const requiredColumns = [
     { name: 'lastPaymentId', type: 'TEXT' },
     { name: 'planUpdatedAt', type: 'TEXT' },
     { name: 'dailyUsage', type: 'INTEGER DEFAULT 0' },
-    { name: 'credits', type: 'INTEGER DEFAULT 0' }
+    { name: 'credits', type: 'INTEGER DEFAULT 0' },
+    { name: 'name', type: 'TEXT' }
 ];
 
 requiredColumns.forEach(col => addColumn('users', col.name, col.type));

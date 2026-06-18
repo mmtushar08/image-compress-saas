@@ -5,6 +5,7 @@ import { SEOHead } from '../../../components/SEOHead';
 import '../../../styles/dashboard.css';
 
 export default function Signup() {
+    const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [loading, setLoading] = useState(false);
     const [emailSent, setEmailSent] = useState(false);
@@ -13,6 +14,7 @@ export default function Signup() {
     const navigate = useNavigate();
     const location = useLocation();
     const plan = searchParams.get('plan') || 'free';
+    const isLogin = location.pathname === '/login';
 
     // If already logged in, go to dashboard
     useEffect(() => {
@@ -38,7 +40,7 @@ export default function Signup() {
                     'Content-Type': 'application/json',
                     'CSRF-Token': csrfToken
                 },
-                body: JSON.stringify({ email, plan })
+                body: JSON.stringify({ email, name, plan })
             });
             const data = await res.json();
 
@@ -79,8 +81,6 @@ export default function Signup() {
         );
     }
 
-    const isLogin = location.pathname === '/login';
-
     return (
         <div className="auth-container">
             <SEOHead
@@ -98,6 +98,17 @@ export default function Signup() {
                 </div>
 
                 <form onSubmit={handleSubmit} className="auth-form">
+                    {!isLogin && (
+                        <div className="input-group">
+                            <Mail className="input-icon" size={20} />
+                            <input
+                                type="text"
+                                placeholder="Your name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
+                        </div>
+                    )}
                     <div className="input-group">
                         <Mail className="input-icon" size={20} />
                         <input

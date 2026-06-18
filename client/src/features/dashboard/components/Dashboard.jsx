@@ -70,8 +70,8 @@ export default function Dashboard() {
         <div className="dashboard-container">
             <header className="dashboard-header">
                 <div>
-                    <h1>Welcome back!</h1>
-                    <p>{user.email}</p>
+                    <h1>Welcome back{user.user?.name ? `, ${user.user.name}` : ''}!</h1>
+                    <p>{user.user?.email || user.email}</p>
                 </div>
                 <div className="plan-badge">{(plan.name || user.plan).toUpperCase()} PLAN</div>
             </header>
