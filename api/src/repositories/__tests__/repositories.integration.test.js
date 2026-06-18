@@ -9,6 +9,7 @@ const userRepo  = require('../userRepository');
 const apiKeyRepo = require('../apiKeyRepository');
 const guestRepo = require('../guestLimitRepository');
 const downloadTokenRepo = require('../downloadTokenRepository');
+const auditRepo = require('../auditRepository');
 
 beforeAll(async () => {
     await runMigrations();
@@ -19,11 +20,26 @@ afterAll(async () => {
 });
 
 describe('migrations', () => {
-    it('creates all four core tables', async () => {
+    it('creates all core tables including audit_log', async () => {
         expect(await knex.schema.hasTable('users')).toBe(true);
         expect(await knex.schema.hasTable('api_keys')).toBe(true);
         expect(await knex.schema.hasTable('download_tokens')).toBe(true);
         expect(await knex.schema.hasTable('guest_limits')).toBe(true);
+        expect(await knex.schema.hasTable('audit_log')).toBe(true);
+    });
+});
+
+describe('auditRepository', () => {
+    it('records and lists audit entries (most recent first, metadata as JSON)', async () => {
+        await auditRepo.record({ action: 'auth.login', actorType: 'user', actorId: 'u_int_1', ip: '1.1.1.1', metadata: { email: 'int@test.com' } });
+        await auditRepo.record({ action: 'admin.plan_update', actorType: 'admin', targetId: 'u_int_1', ip: '2.2.2.2', metadata: { to: 'web-pro' } });
+
+        const all = await auditRepo.list({ limit: 10 });
+        expect(all.length).toBeGreaterThanOrEqual(2);
+
+        const logins = await auditRepo.list({ action: 'auth.login', limit: 10 });
+        expect(logins.every(e => e.action === 'auth.login')).toBe(true);
+        expect(JSON.parse(logins[0].metadata).email).toBe('int@test.com');
     });
 });
 

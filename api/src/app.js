@@ -6,8 +6,10 @@ const rateLimit   = require('express-rate-limit');
 const { v4: uuidv4 } = require('uuid');
 const path        = require('path');
 const authMiddleware = require('./middleware/auth');
+const requestLogger  = require('./middleware/requestLogger');
 const compressRoutes = require('./routes/compress');
 const logger      = require('./utils/logger');
+const knex        = require('./db');
 
 const app = express();
 
@@ -18,6 +20,9 @@ app.use((req, res, next) => {
     res.setHeader('X-Request-ID', req.id);
     next();
 });
+
+// Correlation-id request logging (after req.id is assigned)
+app.use(requestLogger);
 
 if (process.env.NODE_ENV === 'production') {
     app.use((req, res, next) => {
@@ -94,8 +99,20 @@ app.get('/api/csrf-token', csrfProtection, (req, res) => {
     res.json({ csrfToken: req.csrfToken() });
 });
 
+// Liveness — process is up (no dependencies checked)
 app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', service: 'shrinkix-api', uptime: process.uptime() });
+});
+
+// Readiness — verifies the database is reachable (for load balancers / k8s)
+app.get('/api/health/ready', async (req, res) => {
+    try {
+        await knex.raw('SELECT 1');
+        res.json({ status: 'ready', db: 'up' });
+    } catch (err) {
+        req.log?.error('Readiness check failed', { error: err.message });
+        res.status(503).json({ status: 'not_ready', db: 'down' });
+    }
 });
 
 app.get('/api/check-limit', async (req, res) => {

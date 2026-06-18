@@ -1,6 +1,8 @@
 const logger = require('../utils/logger');
 const { PLANS } = require('./userController');
 const userRepo = require('../repositories/userRepository');
+const auditRepo = require('../repositories/auditRepository');
+const { audit } = require('../services/auditService');
 
 const parseUser = (user) => ({
     ...user,
@@ -119,6 +121,11 @@ exports.updateUserPlan = async (req, res) => {
 
         const updatedUser = await userRepo.findById(id);
 
+        audit('admin.plan_update', {
+            actorType: 'admin', targetType: 'user', targetId: id, ip: req.ip,
+            metadata: { from: user.plan, to: plan },
+        });
+
         res.json({
             success: true,
             message: `User plan updated to ${plan}`,
@@ -127,5 +134,25 @@ exports.updateUserPlan = async (req, res) => {
     } catch (error) {
         logger.error('Admin updateUserPlan error', { error: error.message });
         res.status(500).json({ error: 'Failed to update user plan' });
+    }
+};
+
+/**
+ * Read the audit log (most recent first), optionally filtered by action.
+ */
+exports.getAuditLog = async (req, res) => {
+    try {
+        const { action = '', actorId = '', page = 1, limit = 100 } = req.query;
+        const limitNum = Math.min(parseInt(limit) || 100, 500);
+        const offset   = ((parseInt(page) || 1) - 1) * limitNum;
+
+        const entries = await auditRepo.list({ action, actorId, limit: limitNum, offset });
+        res.json({
+            success: true,
+            entries: entries.map(e => ({ ...e, metadata: e.metadata ? JSON.parse(e.metadata) : null })),
+        });
+    } catch (error) {
+        logger.error('Admin getAuditLog error', { error: error.message });
+        res.status(500).json({ error: 'Failed to fetch audit log' });
     }
 };

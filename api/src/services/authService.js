@@ -6,6 +6,7 @@ const { PLANS } = require('./planService');
 const { computeKeyIndex } = require('./usageService');
 const userRepo   = require('../repositories/userRepository');
 const apiKeyRepo = require('../repositories/apiKeyRepository');
+const { audit } = require('./auditService');
 const {
     sendWelcomeEmail,
     sendMagicLink,
@@ -94,6 +95,7 @@ const register = async (req, res) => {
             .catch(err => logger.error('Admin notification failed', { error: err.message }));
 
         logger.info('New user registered', { email: cleanEmail, plan: selectedPlan });
+        audit('user.register', { actorType: 'user', actorId: userId, targetType: 'user', targetId: userId, ip: req.ip, metadata: { email: cleanEmail, plan: selectedPlan } });
         res.json({ success: true, message: 'Account created! Check your email for the access link.' });
     } catch (error) {
         logger.error('Registration error', { error: error.message, stack: error.stack });
@@ -134,6 +136,7 @@ const verifyToken = async (req, res) => {
         });
 
         logger.info('User verified and logged in', { email });
+        audit('auth.login', { actorType: 'user', actorId: user.id, targetType: 'user', targetId: user.id, ip: req.ip, metadata: { email } });
         res.json({ success: true, user: parseUser(user) });
     } catch (error) {
         logger.error('Token verification error', { error: error.message });
