@@ -6,8 +6,8 @@ const fs = require('fs');
 // importing logger in db.js would create a circular dependency.
 const log = { info: (...a) => console.log('[db]', ...a), error: (...a) => console.error('[db]', ...a) };
 
-// Database File Path
-const DB_PATH = path.join(__dirname, '../data/users.db');
+// Database File Path — TEST_DB_PATH lets Jest use a temp file instead of the real DB
+const DB_PATH = process.env.TEST_DB_PATH || path.join(__dirname, '../data/users.db');
 const JSON_DB_PATH = path.join(__dirname, '../data/users.json');
 
 // Ensure data directory exists
