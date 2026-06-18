@@ -1,0 +1,78 @@
+# Shrinkix — local/production container stack.
+#
+#   app      → Node API (also serves the built React client) on :5000
+#   postgres → PostgreSQL 16 (used from Phase 5 onward; provisioned now so the
+#              database is ready before the SQLite→Postgres migration lands)
+#   redis    → Redis 7 (sessions / rate limits / job queue — Phase 7)
+#
+# Copy api/.env.example → api/.env and fill in secrets before `docker compose up`.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - api/.env
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgres://shrinkix:${POSTGRES_PASSWORD:-shrinkix_dev}@postgres:5432/shrinkix
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      # Persist uploads/output/logs across container restarts
+      - app-uploads:/app/api/uploads
+      - app-output:/app/api/output
+      - app-logs:/app/api/src/logs
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: shrinkix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-shrinkix_dev}
+      POSTGRES_DB: shrinkix
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shrinkix -d shrinkix"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres-data:
+  redis-data:
+  app-uploads:
+  app-output:
+  app-logs:

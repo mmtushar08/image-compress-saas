@@ -13,7 +13,7 @@ validateEnv();
 const initCron = require('./services/cronService');
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
     logger.info(`API running on http://localhost:${PORT}`);
 
     initCron();
@@ -43,3 +43,24 @@ app.listen(PORT, '0.0.0.0', () => {
         });
     }, 60 * 60 * 1000);
 });
+
+// Graceful shutdown — drain in-flight requests before exiting (containers/PM2 send SIGTERM)
+const shutdown = (signal) => {
+    logger.info(`Received ${signal}, shutting down gracefully`);
+    server.close((err) => {
+        if (err) {
+            logger.error('Error during server close', { error: err.message });
+            process.exit(1);
+        }
+        logger.info('HTTP server closed, exiting');
+        process.exit(0);
+    });
+    // Force-exit if connections do not drain in time
+    setTimeout(() => {
+        logger.error('Forced shutdown after timeout');
+        process.exit(1);
+    }, 10000).unref();
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));

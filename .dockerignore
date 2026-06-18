@@ -1,0 +1,40 @@
+# Dependencies (reinstalled inside the image)
+**/node_modules
+
+# Build output (client is rebuilt in-image)
+client/dist
+**/dist
+**/build
+
+# Secrets & local env
+**/.env
+**/.env.keys
+api/.env
+api/.env.keys
+
+# Runtime data that must never be baked into an image
+api/src/data/*.db
+api/src/data/*.json
+api/src/logs
+api/uploads
+api/output
+**/*.log
+
+# VCS & tooling
+.git
+.github
+.gitignore
+.vscode
+.idea
+.DS_Store
+
+# Tests & docs not needed at runtime
+**/__tests__
+**/coverage
+docs
+tests
+client-examples
+sdks
+CSharpTest
+shrinkix-wp
+npm-package
