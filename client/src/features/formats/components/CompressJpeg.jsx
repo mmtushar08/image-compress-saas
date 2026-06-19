@@ -14,7 +14,7 @@ const config = {
         { value: '60–80%', label: 'Average size reduction' },
         { value: '< 2s', label: 'Compression speed' },
         { value: '5 MB', label: 'Max file size (free)' },
-        { value: '25 files', label: 'Bulk limit (free plan)' },
+        { value: '20/mo', label: 'Free plan compressions' },
     ],
 
     definitionTitle: 'What is JPEG compression?',
@@ -25,7 +25,7 @@ const config = {
     steps: [
         {
             name: 'Upload your JPEG files',
-            text: 'Click the upload zone above or drag and drop your JPG or JPEG files. Shrinkix accepts up to 25 files at once on the free plan, up to 5 MB each.',
+            text: 'Click the upload zone above or drag and drop your JPG or JPEG files. Shrinkix accepts multiple files at once. Free plan users get 20 compressions per month, up to 5 MB each.',
         },
         {
             name: 'Automatic compression',
@@ -66,7 +66,7 @@ const config = {
         },
         {
             q: 'Can I compress multiple JPEGs at once?',
-            a: 'Yes. Shrinkix supports bulk JPEG compression. Drag and drop up to 25 files at once on the free plan. Pro users can compress up to 150 MB per file in bulk. Use "Download All" to get all compressed JPEGs as a ZIP.',
+            a: 'Yes. Shrinkix supports bulk JPEG compression. Drag and drop multiple files at once. Free plan users get 20 compressions per month (up to 5 MB per file). Web Pro ($39/mo) offers unlimited compressions up to 75 MB per file. Use "Download All" to get all compressed JPEGs as a ZIP.',
         },
         {
             q: 'Does compressing JPEG images improve SEO?',
@@ -78,7 +78,7 @@ const config = {
         },
         {
             q: 'What is the maximum JPEG file size Shrinkix can compress?',
-            a: 'Free users can compress JPEG files up to 5 MB per file, up to 25 files per day. Pro users ($9/month) can compress files up to 75 MB. API users have limits based on their credit plan.',
+            a: 'Free users can compress JPEG files up to 5 MB per file, with 20 compressions per month. Web Pro ($39/mo) handles files up to 75 MB with unlimited compressions. Web Ultra ($59/mo) handles up to 150 MB per file.',
         },
     ],
 
