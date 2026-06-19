@@ -33,6 +33,11 @@ const CompressImageToKb = lazy(() => import('./features/formats/components/Compr
 const Compress = lazy(() => import('./features/compress/components/Compress'));
 const Convert = lazy(() => import('./features/convert/components/Convert'));
 const WordPressPlugin = lazy(() => import('./features/wordpress/components/WordPress'));
+const CompressJpg = lazy(() => import('./features/formats/components/CompressJpg'));
+const JpgToWebp = lazy(() => import('./features/formats/components/JpgToWebp'));
+const PngToWebp = lazy(() => import('./features/formats/components/PngToWebp'));
+const BatchImageCompressor = lazy(() => import('./features/formats/components/BatchImageCompressor'));
+const AvifConverter = lazy(() => import('./features/formats/components/AvifConverter'));
 
 function PageLoader() {
   return (
@@ -77,6 +82,11 @@ function App() {
           <Route path="/compress" element={<Compress />} />
           <Route path="/convert" element={<Convert />} />
           <Route path="/wordpress" element={<WordPressPlugin />} />
+          <Route path="/compress-jpg" element={<CompressJpg />} />
+          <Route path="/jpg-to-webp" element={<JpgToWebp />} />
+          <Route path="/png-to-webp" element={<PngToWebp />} />
+          <Route path="/batch-image-compressor" element={<BatchImageCompressor />} />
+          <Route path="/avif-converter" element={<AvifConverter />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
