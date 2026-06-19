@@ -99,11 +99,16 @@ const config = {
 
     relatedLinks: [
         { href: '/compress-webp', label: 'Compress WebP →' },
-        { href: '/compress-jpeg', label: 'Compress JPEG →' },
+        { href: '/avif-converter', label: 'AVIF Converter →' },
+        { href: '/compress-jpg', label: 'Compress JPG →' },
         { href: '/compress-png', label: 'Compress PNG →' },
-        { href: '/convert-to-webp', label: 'Convert to WebP →' },
         { href: '/compress-image-to-kb', label: 'Compress to 100 KB →' },
         { href: '/', label: 'All formats →' },
+    ],
+
+    relatedBlogPosts: [
+        { slug: 'what-is-avif', title: 'What Is AVIF? The Next-Gen Image Format Explained', category: 'Formats', readTime: '5 min' },
+        { slug: 'jpg-vs-webp', title: 'JPG vs WebP: Which Image Format Should You Use?', category: 'Formats', readTime: '5 min' },
     ],
 };
 

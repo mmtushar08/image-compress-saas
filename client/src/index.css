@@ -670,7 +670,7 @@ input:disabled+.slider-round {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 32px;
-  max-width: 900px;
+  max-width: 1080px;
   margin: 0 auto 36px;
 }
 
@@ -706,6 +706,11 @@ input:disabled+.slider-round {
   border-top: 1px solid var(--border-color);
   font-size: 0.82rem;
   color: #9aa5b4;
+}
+.footer-tagline {
+  margin-top: 4px;
+  font-size: 0.78rem;
+  color: #6a7a8a;
 }
 
 /* Keep legacy .footer-links class working */

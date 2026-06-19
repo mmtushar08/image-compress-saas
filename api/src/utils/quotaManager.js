@@ -99,13 +99,6 @@ const PLAN_LIMITS = {
 };
 
 /**
- * Get API key details from database
- */
-const getApiKey = (key) => {
-    return db.prepare('SELECT * FROM api_keys WHERE key = ? AND is_active = 1').get(key);
-};
-
-/**
  * Check if billing cycle needs reset
  */
 const checkAndResetCycle = (apiKey) => {
@@ -139,110 +132,7 @@ const checkAndResetCycle = (apiKey) => {
     return apiKey;
 };
 
-/**
- * Check quota - SOFT enforcement (log only, don't block yet)
- */
-const checkQuotaSoft = (key, requestId) => {
-    const apiKey = getApiKey(key);
-
-    if (!apiKey) {
-        logger.warn('API key not found', { key: key.substring(0, 10), request_id: requestId });
-        return { allowed: false, reason: 'invalid_key' };
-    }
-
-    // Check if sandbox
-    const isSandbox = key.startsWith('sk_test_');
-
-    // Reset cycle if needed
-    const updatedKey = checkAndResetCycle(apiKey);
-
-    const planLimits = PLAN_LIMITS[updatedKey.plan_id] || PLAN_LIMITS.free;
-    const limit = updatedKey.monthly_limit || planLimits.monthly_limit;
-
-    // SOFT CHECK - log but don't block
-    const wouldExceed = updatedKey.used_count >= limit;
-
-    if (wouldExceed) {
-        logger.warn('Quota would be exceeded (not blocking yet)', {
-            api_key_id: updatedKey.id,
-            plan: updatedKey.plan_id,
-            used: updatedKey.used_count,
-            limit: limit,
-            request_id: requestId,
-            sandbox: isSandbox
-        });
-    } else {
-        logger.info('Quota check passed', {
-            api_key_id: updatedKey.id,
-            plan: updatedKey.plan_id,
-            used: updatedKey.used_count,
-            limit: limit,
-            remaining: limit - updatedKey.used_count,
-            request_id: requestId,
-            sandbox: isSandbox
-        });
-    }
-
-    return {
-        allowed: true, // Always allow for now (soft enforcement)
-        wouldBlock: wouldExceed, // Flag for monitoring
-        apiKey: updatedKey,
-        remaining: limit - updatedKey.used_count,
-        limit: limit,
-        used: updatedKey.used_count,
-        reset_at: updatedKey.reset_at,
-        sandbox: isSandbox
-    };
-};
-
-/**
- * Increment usage counter
- */
-const incrementUsage = (apiKeyId, requestId) => {
-    db.prepare(`
-        UPDATE api_keys 
-        SET used_count = used_count + 1,
-            last_used_at = ?
-        WHERE id = ?
-    `).run(new Date().toISOString(), apiKeyId);
-
-    logger.info('Incremented usage', {
-        api_key_id: apiKeyId,
-        request_id: requestId
-    });
-};
-
-/**
- * Get plan limits
- */
-const getPlanLimits = (planId) => {
-    return PLAN_LIMITS[planId] || PLAN_LIMITS.free;
-};
-
-/**
- * Get quota status
- */
-const getQuotaStatus = (apiKey) => {
-    const updatedKey = checkAndResetCycle(apiKey);
-    const planLimits = PLAN_LIMITS[updatedKey.plan_id] || PLAN_LIMITS.free;
-    const limit = updatedKey.monthly_limit || planLimits.monthly_limit;
-
-    return {
-        plan: updatedKey.plan_id,
-        used: updatedKey.used_count,
-        limit: limit,
-        remaining: Math.max(0, limit - updatedKey.used_count),
-        reset_at: updatedKey.reset_at,
-        percentage_used: ((updatedKey.used_count / limit) * 100).toFixed(2)
-    };
-};
-
 module.exports = {
     PLAN_LIMITS,
-    getApiKey,
-    checkQuotaSoft,
-    incrementUsage,
-    getPlanLimits,
-    getQuotaStatus,
-    checkAndResetCycle
+    checkAndResetCycle,
 };
