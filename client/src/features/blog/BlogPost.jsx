@@ -280,6 +280,15 @@ export default function BlogPost() {
         .filter(Boolean);
 
     const postUrl = `${SITE_URL}/blog/${post.slug}`;
+
+    // Insert inline CTA after the section where cumulative words first cross 50% of total
+    const sectionWordCounts = post.sections.map(s => s.body.split(/\s+/).length);
+    const totalWords = sectionWordCounts.reduce((a, b) => a + b, 0);
+    let cumulative = 0;
+    const midSectionIndex = sectionWordCounts.findIndex(count => {
+        cumulative += count;
+        return cumulative >= totalWords * 0.5;
+    });
     const faqSchema = buildFaqSchema(post);
 
     const dateStr = new Date(post.date).toLocaleDateString('en-US', {
@@ -379,8 +388,8 @@ export default function BlogPost() {
                             <section key={i}>
                                 <h2 id={slugify(section.heading)}>{section.heading}</h2>
                                 {renderBody(section.body)}
-                                {/* Mid-article newsletter nudge after section 3 */}
-                                {i === 2 && (
+                                {/* Mid-article CTA — inserted after the section that crosses 50% word count */}
+                                {i === midSectionIndex && (
                                     <aside className="blog-inline-cta">
                                         <strong>Free tool:</strong> Compress your images directly in the browser — no sign-up, instant results.{' '}
                                         <Link to="/">Try Shrinkix →</Link>
