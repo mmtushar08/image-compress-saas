@@ -2089,7 +2089,8 @@ input:disabled+.slider-round {
   position: relative;
 }
 
-.nav-dropdown-toggle {
+.nav-dropdown-toggle,
+.nav-dropdown-btn {
   background: none;
   border: none;
   padding: 0;
@@ -2098,7 +2099,18 @@ input:disabled+.slider-round {
   align-items: center;
   gap: 4px;
   cursor: pointer;
-  color: inherit;
+  color: rgba(255,255,255,0.82);
+  font-weight: 500;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+.nav-dropdown-btn:hover,
+.nav-dropdown-btn.active { color: white; }
+
+.nav-dropdown-divider {
+  height: 1px;
+  background: #e3e8ee;
+  margin: 4px 8px;
 }
 
 .nav-chevron {
