@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { JsonLd } from './components/SEOHead';
 import { organizationSchema, websiteSchema } from './seo/schemas';
 import Navbar from './components/layout/Navbar';
@@ -38,6 +38,8 @@ const JpgToWebp = lazy(() => import('./features/formats/components/JpgToWebp'));
 const PngToWebp = lazy(() => import('./features/formats/components/PngToWebp'));
 const BatchImageCompressor = lazy(() => import('./features/formats/components/BatchImageCompressor'));
 const AvifConverter = lazy(() => import('./features/formats/components/AvifConverter'));
+const Blog = lazy(() => import('./features/blog/Blog'));
+const BlogPost = lazy(() => import('./features/blog/BlogPost'));
 
 function PageLoader() {
   return (
@@ -73,7 +75,7 @@ function App() {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/checkout/:type" element={<Checkout />} />
           <Route path="/admin" element={<Admin />} />
-          <Route path="/compress-jpeg" element={<CompressJpeg />} />
+          <Route path="/compress-jpeg" element={<Navigate to="/compress-jpg" replace />} />
           <Route path="/compress-png" element={<CompressPng />} />
           <Route path="/compress-webp" element={<CompressWebp />} />
           <Route path="/compress-avif" element={<CompressAvif />} />
@@ -87,6 +89,8 @@ function App() {
           <Route path="/png-to-webp" element={<PngToWebp />} />
           <Route path="/batch-image-compressor" element={<BatchImageCompressor />} />
           <Route path="/avif-converter" element={<AvifConverter />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </Suspense>
