@@ -4,9 +4,11 @@ export const POSTS = [
         title: 'How to Compress Images for Web (Without Losing Quality)',
         description: 'Learn how to reduce image file sizes for faster websites without sacrificing visual quality. Covers JPEG, PNG, WebP, and AVIF with real compression benchmarks.',
         date: '2025-06-10',
+        lastReviewed: '2025-06-18',
         readTime: '6 min read',
+        wordCount: 1480,
         category: 'Guides',
-        hero: '/blog/compress-images-web.png',
+        tags: ['image compression', 'web performance', 'Core Web Vitals', 'LCP', 'PageSpeed'],
         sections: [
             {
                 heading: 'Why image compression matters for the web',
@@ -48,7 +50,7 @@ Shrinkix uses an adaptive quality engine: images under 50 KB get q=90 (already s
             },
             {
                 heading: 'Compression tools compared',
-                body: `**Squoosh** (Google) — browser-based, great for experimenting with settings, manual process. Not suitable for bulk work.
+                body: `**Squoosh (Google)** — browser-based, great for experimenting with settings, manual process. Not suitable for bulk work.
 
 **ImageOptim** — excellent macOS app for batch lossless compression of PNG and JPEG. No format conversion.
 
@@ -60,17 +62,17 @@ Shrinkix uses an adaptive quality engine: images under 50 KB get q=90 (already s
             },
             {
                 heading: 'Step-by-step: compress images for your website',
-                body: `1. **Resize first, compress second.** There's no point compressing a 4000×3000 photo if you're displaying it at 1200×800. Resize to the maximum display size before compressing.
+                body: `**1. Resize first, compress second.** There's no point compressing a 4000×3000 photo if you're displaying it at 1200×800. Resize to the maximum display size before compressing.
 
-2. **Choose the right format.** Photo? Use WebP with a JPEG fallback. Logo with transparency? PNG. Need maximum compression? Try AVIF.
+**2. Choose the right format.** Photo? Use WebP with a JPEG fallback. Logo with transparency? PNG. Need maximum compression? Try AVIF.
 
-3. **Upload to Shrinkix.** Drop your files — it accepts PNG, JPG, WebP, and AVIF simultaneously. No sign-up, no watermarks.
+**3. Upload to Shrinkix.** Drop your files — it accepts PNG, JPG, WebP, and AVIF simultaneously. No sign-up, no watermarks.
 
-4. **Choose output format.** If you want to convert to WebP or AVIF, select the target format. Otherwise it compresses in-place.
+**4. Choose output format.** If you want to convert to WebP or AVIF, select the target format. Otherwise it compresses in-place.
 
-5. **Download and replace.** Replace the original files in your project. Your images are automatically deleted from our servers after processing.
+**5. Download and replace.** Replace the original files in your project. Your images are automatically deleted from our servers after processing.
 
-6. **Add lazy loading.** In HTML: \`<img loading="lazy" src="photo.webp" alt="...">\`. This defers loading images below the fold, further improving LCP.`
+**6. Add lazy loading.** In HTML: \`<img loading="lazy" src="photo.webp" alt="...">\`. This defers loading images below the fold, further improving LCP.`
             },
         ],
         faq: [
@@ -88,7 +90,7 @@ Shrinkix uses an adaptive quality engine: images under 50 KB get q=90 (already s
             },
             {
                 q: 'How do I compress multiple images at once?',
-                a: 'Use Shrinkix\'s batch compressor — drop multiple files at once and they\'ll all be processed simultaneously. Free plan supports up to 20 compressions per month.'
+                a: "Use Shrinkix's batch compressor — drop multiple files at once and they'll all be processed simultaneously. Free plan supports up to 20 compressions per month."
             },
         ],
         relatedPosts: ['jpg-vs-webp', 'what-is-avif'],
@@ -104,9 +106,11 @@ Shrinkix uses an adaptive quality engine: images under 50 KB get q=90 (already s
         title: 'JPG vs WebP: Which Image Format Should You Use?',
         description: 'A direct comparison of JPG and WebP for web use. File size, browser support, quality, and when to switch. Includes real benchmark data.',
         date: '2025-06-14',
+        lastReviewed: '2025-06-18',
         readTime: '5 min read',
+        wordCount: 1230,
         category: 'Formats',
-        hero: '/blog/jpg-vs-webp.png',
+        tags: ['WebP', 'JPEG', 'image formats', 'browser support', 'file size'],
         sections: [
             {
                 heading: 'The short answer',
@@ -118,16 +122,31 @@ The main reason to stick with JPEG in 2025 is compatibility with very old softwa
                 heading: 'File size: how much smaller is WebP?',
                 body: `Google's original WebP whitepaper claimed 25–34% smaller files than JPEG at equivalent quality. Real-world results vary based on image content:
 
-- **Photographs with gradients and texture** (landscapes, portraits): WebP saves 28–35%
-- **Flat graphics with few colors** (product images on white background): WebP saves 20–30%
-- **Images with fine detail** (architecture, text in image): WebP saves 15–25%
-- **Tiny thumbnails under 5 KB**: savings are negligible, stick with JPEG
+**Photographs with gradients and texture** (landscapes, portraits): WebP saves 28–35%
+
+**Flat graphics with few colors** (product images on white background): WebP saves 20–30%
+
+**Images with fine detail** (architecture, text in image): WebP saves 15–25%
+
+**Tiny thumbnails under 5 KB**: savings are negligible — stick with JPEG
 
 Benchmark on 500 stock photos: average JPEG at q=80 was 87 KB. Same images as WebP at equivalent perceived quality averaged 61 KB. That's a **30% reduction** without any visible quality difference.`
             },
             {
+                heading: 'Head-to-head comparison',
+                body: `Here's a direct comparison at equivalent perceived quality:
+
+| Format | Avg. file size | Savings vs JPEG | Browser support | Transparency |
+|--------|---------------|-----------------|-----------------|--------------|
+| JPEG   | 100 KB        | —               | 99%+            | No           |
+| WebP   | 68 KB         | ~32%            | 96%+            | Yes          |
+| AVIF   | 48 KB         | ~52%            | 93%+            | Yes          |
+
+AVIF beats both, but WebP is the pragmatic choice for most teams because of its encoding speed and near-universal browser support.`
+            },
+            {
                 heading: 'Visual quality comparison',
-                body: `At equivalent perceived quality, WebP and JPEG look essentially identical to the human eye. The difference becomes apparent only when you examine compressed artifacts at the pixel level:
+                body: `At equivalent perceived quality, WebP and JPEG look essentially identical to the human eye. The differences only appear when examining compressed artifacts at the pixel level:
 
 **JPEG artifacts**: Characteristic 8×8 pixel "blocking" around high-contrast edges. Most visible in areas with sharp color transitions — sky meeting buildings, text on solid backgrounds.
 
@@ -136,10 +155,10 @@ Benchmark on 500 stock photos: average JPEG at q=80 was 87 KB. Same images as We
 The practical takeaway: you can target the same file size with WebP and get measurably better quality, or target the same quality and get a meaningfully smaller file.`
             },
             {
-                heading: 'Browser support',
-                body: `WebP is supported by **96.5% of browsers worldwide** as of 2025 (source: caniuse.com). The only meaningful holdouts are Internet Explorer 11 (market share below 0.3%) and some older iOS Safari versions from before 2020.
+                heading: 'Browser support in 2025',
+                body: `WebP is supported by **96.5% of browsers worldwide** as of 2025. The only meaningful holdouts are Internet Explorer 11 (market share below 0.3%) and some iOS Safari versions from before 2020.
 
-For new web projects, WebP is safe to use as the primary format with no fallback. If you serve a legacy enterprise audience that uses IE11, keep JPEG as a fallback using the HTML \`<picture>\` element:
+For new web projects, WebP is safe to use as the primary format. If you serve a legacy enterprise audience that uses IE11, keep JPEG as a fallback using the HTML \`<picture>\` element:
 
 \`\`\`html
 <picture>
@@ -154,17 +173,17 @@ This serves WebP to modern browsers and falls back to JPEG for IE11. The extra m
                 heading: 'When to use JPEG instead of WebP',
                 body: `**When you need maximum compatibility with external tools.** Some CMS systems, email clients, and image editing apps still don't handle WebP natively. If your workflow involves exporting images to third-party tools, JPEG is more universally compatible.
 
-**When serving images to native mobile apps that haven't added WebP support.** iOS added WebP support in iOS 14 (2020). Android has supported it since 2014. If you're targeting older OS versions, test compatibility first.
+**When serving images to native mobile apps.** iOS added WebP support in iOS 14 (2020). Android has supported it since 2014. If you're targeting older OS versions, test compatibility first.
 
-**When the file is going to be re-edited.** JPEG is a destructive format — each save degrades quality. If you're sending a file to a client who will edit and re-save it multiple times, PNG is actually the right choice (lossless). WebP is equally lossy, so the same degradation issue applies.
+**When the file will be re-edited.** JPEG is a destructive format — each save degrades quality. If you're sending a file to a client who will edit and re-save it multiple times, PNG is actually the right choice (lossless). WebP has the same lossy degradation issue.
 
-**When your image is already very small.** If your JPEG is already under 10 KB, the WebP savings are minimal and the format conversion adds processing overhead.`
+**When your image is already very small.** If your JPEG is already under 10 KB, WebP savings are minimal and format conversion adds overhead.`
             },
             {
                 heading: 'How to convert JPG to WebP',
                 body: `The easiest way is to use Shrinkix's JPG to WebP converter — drop your files, select WebP as the output format, and download the results. No sign-up required, files deleted immediately.
 
-For automated conversion in a Node.js build pipeline, Sharp makes it straightforward:
+For automated conversion in a Node.js build pipeline:
 
 \`\`\`js
 const sharp = require('sharp');
@@ -172,18 +191,13 @@ const sharp = require('sharp');
 await sharp('photo.jpg')
   .webp({ quality: 80 })
   .toFile('photo.webp');
-\`\`\`
-
-For bulk conversion in the terminal using ImageMagick:
-\`\`\`bash
-for f in *.jpg; do convert "$f" -quality 80 "\${f%.jpg}.webp"; done
 \`\`\``
             },
         ],
         faq: [
             {
                 q: 'Is WebP better than JPG?',
-                a: 'Yes, for web use. WebP produces files 25–34% smaller than JPEG at the same visual quality, and it also supports transparency. Browser support is now 96%+, making it the right default for modern websites.'
+                a: 'Yes, for web use. WebP produces files 25–34% smaller than JPEG at the same visual quality, and also supports transparency. Browser support is now 96%+, making it the right default for modern websites.'
             },
             {
                 q: 'Can I use WebP everywhere?',
@@ -195,7 +209,7 @@ for f in *.jpg; do convert "$f" -quality 80 "\${f%.jpg}.webp"; done
             },
             {
                 q: 'How do I convert JPG to WebP for free?',
-                a: 'Drop your JPG files into Shrinkix, select WebP as the output format, and download. It\'s free, requires no sign-up, and deletes your files immediately after processing.'
+                a: "Drop your JPG files into Shrinkix, select WebP as the output format, and download. It's free, requires no sign-up, and deletes your files immediately after processing."
             },
         ],
         relatedPosts: ['how-to-compress-images-for-web', 'what-is-avif'],
@@ -211,48 +225,55 @@ for f in *.jpg; do convert "$f" -quality 80 "\${f%.jpg}.webp"; done
         title: 'What Is AVIF? The Next-Gen Image Format Explained',
         description: 'AVIF delivers 50% smaller files than JPEG. Learn what AVIF is, how it compares to WebP and JPEG, and when to use it on your website.',
         date: '2025-06-18',
+        lastReviewed: '2025-06-18',
         readTime: '5 min read',
+        wordCount: 1310,
         category: 'Formats',
-        hero: '/blog/what-is-avif.png',
+        tags: ['AVIF', 'image formats', 'AV1', 'next-gen', 'Core Web Vitals'],
         sections: [
             {
                 heading: 'What is AVIF?',
                 body: `AVIF stands for **AV1 Image File Format**. It's a modern image format derived from the AV1 video codec, developed by the Alliance for Open Media — a consortium that includes Google, Netflix, Apple, Microsoft, and Mozilla.
 
-The key claim to fame: AVIF delivers **roughly 50% smaller files than JPEG** at equivalent visual quality. That's not a typo. A 200 KB JPEG photo can often become a 95 KB AVIF with no detectable quality difference. For a webpage with 10 images, that's nearly 1 MB of savings.
+The key claim to fame: AVIF delivers **roughly 50% smaller files than JPEG** at equivalent visual quality. A 200 KB JPEG photo can often become a 95 KB AVIF with no detectable quality difference.
 
 AVIF also supports:
-- Both lossy and lossless compression
-- Transparency (alpha channel) — something JPEG can't do at all
-- HDR (High Dynamic Range) and wide color gamut
-- Animated images (like GIF, but much more efficient)
-- Up to 12-bit color depth`
+
+**Transparency (alpha channel)** — something JPEG can't do at all
+
+**HDR and wide color gamut** — future-proof for high-quality displays
+
+**Animated images** — like GIF, but dramatically more efficient
+
+**12-bit color depth** — versus JPEG's 8-bit`
             },
             {
-                heading: 'AVIF vs WebP vs JPEG: how do they compare?',
+                heading: 'AVIF vs WebP vs JPEG: direct comparison',
                 body: `Here's a direct comparison at equivalent perceived quality (SSIM score ~0.95):
 
-| Format | Avg. file size | Savings vs JPEG | Browser support |
-|--------|---------------|-----------------|-----------------|
-| JPEG   | 100 KB        | —               | 99%+            |
-| WebP   | 68 KB         | ~32%            | 96%+            |
-| AVIF   | 48 KB         | ~52%            | 93%+            |
+| Format | Avg. file size | Savings vs JPEG | Browser support | Transparency |
+|--------|---------------|-----------------|-----------------|--------------|
+| JPEG   | 100 KB        | —               | 99%+            | No           |
+| WebP   | 68 KB         | ~32%            | 96%+            | Yes          |
+| AVIF   | 48 KB         | ~52%            | 93%+            | Yes          |
 
-AVIF wins on compression — consistently. The trade-off is encoder speed: AVIF encoding is significantly slower than JPEG or WebP, which matters for real-time compression pipelines. For static assets that are compressed once at build time, encoding speed is irrelevant.
-
-Browser support crossed 93% in 2024, and it's now the default format for new projects at companies like Netflix (which has used it for poster images since 2018) and Facebook.`
+AVIF wins on compression — consistently. The trade-off is encoder speed: AVIF encoding is significantly slower than JPEG or WebP, which matters for real-time compression pipelines. For static assets that are compressed once at build time, encoding speed is irrelevant.`
             },
             {
                 heading: 'Browser support: is AVIF safe to use?',
                 body: `As of 2025, AVIF is supported by:
-- Chrome 85+ (released August 2020)
-- Firefox 93+ (released October 2021)
-- Safari 16+ (released September 2022)
-- Edge 121+ (released January 2024)
+
+**Chrome 85+** — released August 2020
+
+**Firefox 93+** — released October 2021
+
+**Safari 16+** — released September 2022
+
+**Edge 121+** — released January 2024
 
 Combined, this covers **93%+ of global browser traffic**. The remaining ~7% is mostly older Safari on iOS (pre-16) and legacy Android browsers.
 
-For production use, the recommended approach is to serve AVIF with a WebP fallback using the HTML \`<picture>\` element:
+For production use, the recommended approach is to serve AVIF with a WebP fallback:
 
 \`\`\`html
 <picture>
@@ -262,30 +283,38 @@ For production use, the recommended approach is to serve AVIF with a WebP fallba
 </picture>
 \`\`\`
 
-This gives Chrome/Firefox/Safari modern users the best compression, WebP for the next tier, and JPEG as the universal fallback. You still serve the optimal format to 96%+ of users.`
+This gives modern browsers the best compression, WebP for the next tier, and JPEG as a universal fallback.`
             },
             {
                 heading: 'When should you use AVIF?',
                 body: `**Use AVIF when:**
-- You're optimizing for maximum performance (Core Web Vitals, LCP, bandwidth cost)
-- You're building a new project and can use \`<picture>\` with fallbacks
-- You're serving image-heavy content: e-commerce product images, photo galleries, media sites
-- Your images are photographs — AVIF's gains are largest on photographic content
+
+You're optimizing for maximum performance (Core Web Vitals, LCP, bandwidth cost)
+
+You're building a new project and can use \`<picture>\` with fallbacks
+
+You're serving image-heavy content: e-commerce product images, photo galleries, media sites
+
+Your images are photographs — AVIF's gains are largest on photographic content
 
 **Stick with WebP when:**
-- You need a single format that works without \`<picture>\` element overhead
-- You're using a CMS or CDN that doesn't yet support AVIF transcoding
-- You're compressing real-time (AVIF encoding is 5–10x slower than WebP)
+
+You need a single format that works without \`<picture>\` element overhead
+
+You're using a CMS or CDN that doesn't yet support AVIF transcoding
+
+You're compressing real-time (AVIF encoding is 5–10x slower than WebP)
 
 **Stick with JPEG when:**
-- You're sending files to external tools, clients, or workflows that don't support WebP/AVIF
-- You need maximum software compatibility (Photoshop, most CMS systems, email clients)`
+
+You're sending files to external tools, clients, or workflows that don't support WebP/AVIF`
             },
             {
                 heading: 'How to convert images to AVIF',
                 body: `**Using Shrinkix (easiest):** Drop any PNG or JPG into Shrinkix, select AVIF as the output format, and download. Free, no sign-up, files deleted immediately.
 
 **Using Sharp (Node.js):**
+
 \`\`\`js
 const sharp = require('sharp');
 
@@ -293,14 +322,8 @@ await sharp('photo.jpg')
   .avif({ quality: 60, effort: 4 })
   .toFile('photo.avif');
 \`\`\`
-Note: AVIF quality scales differently than JPEG. q=60 in AVIF is roughly equivalent to q=85 in JPEG visually.
 
-**Using ffmpeg (CLI):**
-\`\`\`bash
-ffmpeg -i photo.jpg -c:v libaom-av1 -still-picture 1 photo.avif
-\`\`\`
-
-**Via Cloudinary or ImageKit:** Both CDNs support automatic format negotiation — they'll serve AVIF to browsers that support it and fall back automatically.`
+Note: AVIF quality scales differently than JPEG. q=60 in AVIF is roughly equivalent to q=85 in JPEG visually.`
             },
             {
                 heading: 'AVIF and Core Web Vitals',
@@ -326,7 +349,7 @@ Google also flags image format as a PageSpeed Insights opportunity: "Serve image
             },
             {
                 q: 'How do I convert to AVIF for free?',
-                a: 'Use Shrinkix\'s AVIF converter — drop your PNG or JPG files, select AVIF as the output, and download. Free with no sign-up required. Files are deleted immediately after processing.'
+                a: "Use Shrinkix's AVIF converter — drop your PNG or JPG files, select AVIF as the output, and download. Free with no sign-up required. Files are deleted immediately after processing."
             },
         ],
         relatedPosts: ['jpg-vs-webp', 'how-to-compress-images-for-web'],
