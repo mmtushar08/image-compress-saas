@@ -85,6 +85,11 @@ const config = {
         { href: '/compress-jpg', label: 'Compress JPG →' },
         { href: '/', label: 'All tools →' },
     ],
+
+    relatedBlogPosts: [
+        { slug: 'what-is-avif', title: 'What Is AVIF? The Next-Gen Image Format Explained', category: 'Formats', readTime: '5 min' },
+        { slug: 'jpg-vs-webp', title: 'JPG vs WebP: Which Image Format Should You Use?', category: 'Formats', readTime: '5 min' },
+    ],
 };
 
 export default function AvifConverter() {

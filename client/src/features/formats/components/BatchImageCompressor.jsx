@@ -85,6 +85,11 @@ const config = {
         { href: '/jpg-to-webp', label: 'JPG to WebP →' },
         { href: '/developers', label: 'Developer API →' },
     ],
+
+    relatedBlogPosts: [
+        { slug: 'how-to-compress-images-for-web', title: 'How to Compress Images for Web (Without Losing Quality)', category: 'Guide', readTime: '6 min' },
+        { slug: 'jpg-vs-webp', title: 'JPG vs WebP: Which Image Format Should You Use?', category: 'Formats', readTime: '5 min' },
+    ],
 };
 
 export default function BatchImageCompressor() {

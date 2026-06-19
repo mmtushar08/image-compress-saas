@@ -85,6 +85,11 @@ const config = {
         { href: '/avif-converter', label: 'Convert to AVIF →' },
         { href: '/', label: 'All tools →' },
     ],
+
+    relatedBlogPosts: [
+        { slug: 'jpg-vs-webp', title: 'JPG vs WebP: Which Image Format Should You Use?', category: 'Formats', readTime: '5 min' },
+        { slug: 'how-to-compress-images-for-web', title: 'How to Compress Images for Web (Without Losing Quality)', category: 'Guide', readTime: '6 min' },
+    ],
 };
 
 export default function JpgToWebp() {

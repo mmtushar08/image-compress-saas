@@ -25,7 +25,15 @@ export const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
     "name": "Shrinkix",
-    "url": SITE_URL
+    "url": SITE_URL,
+    "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": `${SITE_URL}/blog?q={search_term_string}`
+        },
+        "query-input": "required name=search_term_string"
+    }
 };
 
 export const softwareAppSchema = {
@@ -51,7 +59,7 @@ export const softwareAppSchema = {
             "name": "Free",
             "price": "0",
             "priceCurrency": "USD",
-            "description": "20 images per day, 5MB file limit"
+            "description": "20 compressions per month, 5MB file limit"
         },
         {
             "@type": "Offer",
@@ -291,7 +299,7 @@ export const pricingWebSchema = {
             "item": {
                 "@type": "Product",
                 "name": "Shrinkix Free",
-                "description": "20 images per day, up to 5MB per file, web interface only.",
+                "description": "20 compressions per month, up to 5MB per file, web interface only.",
                 "brand": { "@type": "Brand", "name": "Shrinkix" },
                 "offers": {
                     "@type": "Offer",
@@ -437,7 +445,7 @@ export const speakableHomeSchema = {
     "@type": "WebPage",
     "speakable": {
         "@type": "SpeakableSpecification",
-        "cssSelector": [".faq-answer p", ".trust-content p", ".problem-content p", ".new-hero-content p"]
+        "cssSelector": [".hero-title", ".hero-subtitle", ".trust-signal-card p", ".feature-card p"]
     },
     "url": SITE_URL
 };

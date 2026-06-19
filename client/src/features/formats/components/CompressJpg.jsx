@@ -78,12 +78,17 @@ const config = {
     ],
 
     relatedLinks: [
-        { href: '/compress-jpeg', label: 'Compress JPEG →' },
         { href: '/compress-png', label: 'Compress PNG →' },
         { href: '/jpg-to-webp', label: 'JPG to WebP →' },
+        { href: '/compress-webp', label: 'Compress WebP →' },
         { href: '/convert-to-webp', label: 'Convert to WebP →' },
         { href: '/batch-image-compressor', label: 'Batch Compress →' },
         { href: '/', label: 'All tools →' },
+    ],
+
+    relatedBlogPosts: [
+        { slug: 'how-to-compress-images-for-web', title: 'How to Compress Images for Web (Without Losing Quality)', category: 'Guide', readTime: '6 min' },
+        { slug: 'jpg-vs-webp', title: 'JPG vs WebP: Which Image Format Should You Use?', category: 'Formats', readTime: '5 min' },
     ],
 };
 

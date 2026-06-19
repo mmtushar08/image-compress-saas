@@ -160,6 +160,24 @@ export default function FormatLandingPage({ config }) {
                 </div>
             </section>
 
+            {/* Related blog posts */}
+            {config.relatedBlogPosts?.length > 0 && (
+                <section className="format-section format-blog-section">
+                    <div className="container">
+                        <h2>From the Shrinkix blog</h2>
+                        <div className="format-blog-links">
+                            {config.relatedBlogPosts.map((post, i) => (
+                                <Link key={i} to={`/blog/${post.slug}`} className="format-blog-card">
+                                    <span className="format-blog-category">{post.category}</span>
+                                    <span className="format-blog-title">{post.title}</span>
+                                    <span className="format-blog-read">{post.readTime} →</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
+
             {/* Related tools */}
             <section className="format-section">
                 <div className="container">
