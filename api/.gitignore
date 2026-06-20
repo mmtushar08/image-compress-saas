@@ -1,0 +1,16 @@
+# Runtime SQLite database (schema is rebuilt by migrations on boot)
+src/data/*.db
+src/data/*.db-journal
+src/data/*.db-wal
+src/data/*.db-shm
+
+# Upload scratch directory
+uploads/
+
+# Local environment secrets
+.env
+.env.local
+
+# Logs
+*.log
+logs/
