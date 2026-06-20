@@ -1,43 +1,43 @@
+const FAQS = [
+    {
+        q: 'Do I need to install an SDK?',
+        a: 'No. The Shrinkix API is a standard HTTP multipart endpoint. Any HTTP client works — axios (Node.js), requests (Python), cURL (PHP / shell), net/http (Go), or java.net.http (Java).',
+    },
+    {
+        q: 'Is there a free tier?',
+        a: '500 compressions per month are free — no credit card required. The free plan supports files up to 5 MB in JPEG, PNG, and WebP format.',
+    },
+    {
+        q: 'Can I use one API key across multiple projects?',
+        a: 'Yes, but we recommend creating separate keys from the API Dashboard for each project. That way you can track usage per project and rotate keys independently.',
+    },
+    {
+        q: 'Are my images stored on your servers?',
+        a: 'No. Images are processed in memory and immediately discarded. Nothing is written to permanent storage. Shrinkix is GDPR and CCPA compliant.',
+    },
+    {
+        q: 'What formats can I compress and convert?',
+        a: 'JPEG, PNG, WebP, and AVIF are all supported as both input and output. AVIF output requires an API Pro plan or higher.',
+    },
+    {
+        q: 'What happens when I hit my monthly limit?',
+        a: 'The API returns a 429 status with error code QUOTA_EXCEEDED. You can upgrade your plan from the dashboard at any time, or add-on credits are available without changing your base plan.',
+    },
+];
+
 export default function DeveloperFAQ() {
     return (
-        <section className="dev-section faq-section">
-            <div className="dev-container">
-                <h2>Frequently Asked Questions</h2>
-                <div className="faq-grid">
-                    <div className="faq-item">
-                        <h3>01. How can I sign up for an API account?</h3>
-                        <p>
-                            You can sign up for the developer API by entering your name and email address above.
-                            After registration, an activation email will be sent to your email address. By clicking
-                            the button within this email, you will be logged in and directed to the dashboard right away.
-                        </p>
-                    </div>
-
-                    <div className="faq-item">
-                        <h3>02. Is there a maximum file size limit?</h3>
-                        <p>
-                            To ensure optimal service quality, the API imposes certain limitations. The maximum file
-                            size permitted is 100MB for Enterprise plans, and images should not surpass a maximum
-                            canvas size of 256MP (32000 pixels in width or height).
-                        </p>
-                    </div>
-
-                    <div className="faq-item">
-                        <h3>03. Can I use one API account for multiple websites?</h3>
-                        <p>
-                            In the API dashboard, you can easily create new API keys. We recommend using different
-                            API keys for different implementations so that you can monitor the number of compressions separately.
-                        </p>
-                    </div>
-
-                    <div className="faq-item">
-                        <h3>04. Can Shrinkix see what images I have uploaded?</h3>
-                        <p>
-                            At Shrinkix, we take your privacy seriously, so we can't see the content of your images.
-                            Only a minimum of personal information is collected and used to administer your account
-                            and to provide you with the requested products and services.
-                        </p>
-                    </div>
+        <section className="dev-section">
+            <div className="dev-section-inner">
+                <span className="dev-section-label">FAQ</span>
+                <h2 className="dev-section-title">Common questions</h2>
+                <div className="dev-faq-list">
+                    {FAQS.map((item, i) => (
+                        <div className="dev-faq-item" key={i}>
+                            <h3>{item.q}</h3>
+                            <p>{item.a}</p>
+                        </div>
+                    ))}
                 </div>
             </div>
         </section>

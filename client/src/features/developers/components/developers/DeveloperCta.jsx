@@ -3,12 +3,15 @@ import { Link } from 'react-router-dom';
 export default function DeveloperCta() {
     return (
         <section className="dev-cta">
-            <div className="dev-container">
+            <div className="dev-cta-inner">
                 <h2>Ready to get started?</h2>
-                <p>Join thousands of developers optimizing images with Shrinkix</p>
-                <div className="cta-buttons">
-                    <Link to="/developers/how-it-works" className="btn-secondary">Learn How It Works</Link>
-                    <Link to="/developers/pricing" className="btn-primary">View Pricing</Link>
+                <p>
+                    Sign up for free, grab your API key, and send your first request in under five minutes.
+                    No credit card required.
+                </p>
+                <div className="dev-cta-actions">
+                    <Link to="/signup" className="dev-btn-primary">Get free API key</Link>
+                    <Link to="/api-docs" className="dev-btn-secondary">Read the docs →</Link>
                 </div>
             </div>
         </section>
